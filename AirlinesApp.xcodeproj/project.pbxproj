@@ -5,8 +5,6 @@
 	};
 	objectVersion = 77;
 	objects = {
-
-<<<<<<< HEAD
 /* Begin PBXBuildFile section */
 		16ECE99A2D2D38E60039BAF3 /* AirlinesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16ECE9952D2D38E60039BAF3 /* AirlinesApp.swift */; };
 		16ECE99B2D2D38E60039BAF3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16ECE9972D2D38E60039BAF3 /* ContentView.swift */; };
@@ -44,7 +42,6 @@
 		16FC30FC2D2D2FF50086ABAF /* AirlinesApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AirlinesApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-=======
 /* Begin PBXFileReference section */
 		16FC30FC2D2D2FF50086ABAF /* AirlinesApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AirlinesApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -57,7 +54,6 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
->>>>>>> refs/remotes/origin/main
 /* Begin PBXFrameworksBuildPhase section */
 		16FC30F92D2D2FF50086ABAF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -69,7 +65,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-<<<<<<< HEAD
 		16ECE9942D2D38E60039BAF3 /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
@@ -176,12 +171,10 @@
 			isa = PBXGroup;
 			children = (
 				16ECE9992D2D38E60039BAF3 /* AirlinesApp */,
-=======
 		16FC30F32D2D2FF50086ABAF = {
 			isa = PBXGroup;
 			children = (
 				16FC30FE2D2D2FF50086ABAF /* AirlinesApp */,
->>>>>>> refs/remotes/origin/main
 				16FC30FD2D2D2FF50086ABAF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -209,12 +202,9 @@
 			);
 			dependencies = (
 			);
-<<<<<<< HEAD
-=======
 			fileSystemSynchronizedGroups = (
 				16FC30FE2D2D2FF50086ABAF /* AirlinesApp */,
 			);
->>>>>>> refs/remotes/origin/main
 			name = AirlinesApp;
 			packageProductDependencies = (
 			);
@@ -261,11 +251,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-<<<<<<< HEAD
 				16ECE99D2D2D38E60039BAF3 /* Preview Assets.xcassets in Resources */,
 				16ECE99E2D2D38E60039BAF3 /* Assets.xcassets in Resources */,
-=======
->>>>>>> refs/remotes/origin/main
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,7 +263,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-<<<<<<< HEAD
 				16ECE9C12D2D5F300039BAF3 /* EncodableExtension.swift in Sources */,
 				16ECE99A2D2D38E60039BAF3 /* AirlinesApp.swift in Sources */,
 				16ECE9B32D2D4DDA0039BAF3 /* UserRole.swift in Sources */,
@@ -290,8 +276,6 @@
 				16ECE9C32D2D6A9E0039BAF3 /* CurrentUserView.swift in Sources */,
 				16ECE9AC2D2D4D310039BAF3 /* UserModel.swift in Sources */,
 				16ECE9A62D2D4A2B0039BAF3 /* AuthViewModel.swift in Sources */,
-=======
->>>>>>> refs/remotes/origin/main
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
