@@ -11,7 +11,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		16FEAE4C2D2ECBA5002564FF /* AirlinesApp */ = {
+		16B8B2B12D2ED6FB003988FD /* AirlinesApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AirlinesApp;
 			sourceTree = "<group>";
@@ -32,7 +32,7 @@
 		16FEAE412D2ECBA5002564FF = {
 			isa = PBXGroup;
 			children = (
-				16FEAE4C2D2ECBA5002564FF /* AirlinesApp */,
+				16B8B2B12D2ED6FB003988FD /* AirlinesApp */,
 				16FEAE4B2D2ECBA5002564FF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				16FEAE4C2D2ECBA5002564FF /* AirlinesApp */,
+				16B8B2B12D2ED6FB003988FD /* AirlinesApp */,
 			);
 			name = AirlinesApp;
 			packageProductDependencies = (
@@ -260,6 +260,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -289,6 +290,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

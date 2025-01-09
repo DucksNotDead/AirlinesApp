@@ -10,7 +10,7 @@ class ApiService {
 	private init() {}
 
 	/// Базовый URL API
-	private let baseURL = URL(string: "http://localhost:\(PORT)")!
+	private let baseURL = URL(string: "http://192.168.0.100:\(PORT)")!
 
 	/// Выполнение запросов с заданным методом и параметрами
 	private func request<T: Decodable>(
@@ -39,7 +39,9 @@ class ApiService {
 
 		// Добавляем тело запроса для методов POST и PATCH
 		if let body = body, (method == "POST" || method == "PATCH") {
-			request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+			let requestBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+			request.httpBody = requestBody
+			print(String(data: requestBody!, encoding: .utf8)!)
 		}
 
 		// Выполнение запроса через URLSession
@@ -48,7 +50,7 @@ class ApiService {
 				guard let httpResponse = result.response as? HTTPURLResponse else {
 					throw URLError(.badServerResponse)
 				}
-				print(httpResponse.statusCode)
+				print(String(data: result.data, encoding: .utf8)!)
 				
 				return result.data
 			}

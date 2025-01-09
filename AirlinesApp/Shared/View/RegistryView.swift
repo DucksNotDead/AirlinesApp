@@ -15,11 +15,10 @@ where
 	}
 
 	@Binding var data: Data
-	@Binding var canEdit: Bool
 	@Binding var formFields: [FormField]
+	let canEdit: Bool
 	let updatable: Bool
 	let idKey: KeyPath<Data.Element, ID>
-	let title: String
 	let itemTitle: (_: Data.Element) -> String
 	let onDelete: (_: Data.Element) -> Void
 	let onUpdateCancel: () -> Void
@@ -27,18 +26,17 @@ where
 	let label: (_: Data.Element) -> Label
 	let content: (_: Data.Element) -> Detail
 
-	@State var selection: Set<ID> = []
+	@State var isDetailPageActive: Bool = false
 	@State var mode: Mode = .view
 	@State var isConfirmDeleteDialogPresented: Bool = false
 	@State var itemToDelete: Data.Element? = nil
 
 	init(
 		data: Binding<Data>,
-		canEdit: Binding<Bool>,
 		formFields: Binding<[FormField]>,
+		canEdit: Bool,
 		updatable: Bool = true,
 		idKey: KeyPath<Data.Element, ID>,
-		title: String,
 		itemTitle: @escaping (_: Data.Element) -> String,
 		onUpdateCancel: @escaping () -> Void,
 		onUpdateSave: @escaping (_: Data.Element) -> Void,
@@ -47,10 +45,9 @@ where
 		@ViewBuilder detail: @escaping (_: Data.Element) -> Detail
 	) {
 		self._data = data
-		self._canEdit = canEdit
+		self.canEdit = canEdit
 		self._formFields = formFields
 		self.idKey = idKey
-		self.title = title
 		self.itemTitle = itemTitle
 		self.onUpdateCancel = onUpdateCancel
 		self.onUpdateSave = onUpdateSave
@@ -93,37 +90,34 @@ where
 	}
 
 	var listView: some View {
-		List(selection: $selection) {
+		List {
 			ForEach(
 				data.map { item in
 					IdentifableItem(id: item[keyPath: idKey], value: item)
 				}, id: \.id
 			) { item in
-				label(item.value)
-					.swipeActions {
-						if canEdit {
-							Button("удалить", systemImage: "trash") {
-								handleItemDelete(item.value)
+				NavigationLink(value: item.id) {
+					label(item.value)
+						.swipeActions {
+							if canEdit {
+								Button("удалить", systemImage: "trash") {
+									handleItemDelete(item.value)
+								}
+								.tint(.red)
 							}
-							.tint(.red)
 						}
-					}
-			}
-		}
-		.navigationTitle(title)
-		.onChange(of: selection) { oldValue, newValue in
-			if (oldValue.first != nil && mode != .view) {
-				handleItemCancel()
+				}
 			}
 		}
 	}
 
 	var formVeiw: some View {
 		Form {
-			ForEach(Array(formFields.enumerated()),
+			ForEach(
+				Array(formFields.enumerated()),
 				id: \.0
 			) { index, field in
-				if (mode != .edit || (updatable && field.updatable)) {
+				if mode != .edit || (updatable && field.updatable) {
 					Section(field.label) {
 						switch field.value {
 						case .string(let binding):
@@ -144,12 +138,12 @@ where
 							}
 							.pickerStyle(.wheel)
 							.frame(maxHeight: 140)
-							case .date(let binding):
-								DatePicker(
-									"Выберете дату",
-									selection: binding,
-									displayedComponents: [.date]
-								)
+						case .date(let binding):
+							DatePicker(
+								"Выберете дату",
+								selection: binding,
+								displayedComponents: [.date]
+							)
 						}
 					}
 				}
@@ -158,57 +152,69 @@ where
 	}
 
 	var body: some View {
-		NavigationSplitView {
-			listView
-		} detail: {
-			if let selectedItem = data.first(where: {
-				$0[keyPath: idKey] == selection.first
-			}) {
-				VStack {
-					if mode == .view {
-						content(selectedItem)
-					} else {
-						formVeiw
-					}
+		listView
+			.onChange(
+				of: isDetailPageActive,
+				{ oldValue, newValue in
+					print(oldValue, newValue)
 				}
-				.navigationTitle(itemTitle(selectedItem))
-				.toolbar {
-					if canEdit {
+			)
+			.navigationDestination(for: ID.self) { id in
+				if let selectedItem = data.first(where: {
+					$0[keyPath: idKey] == id
+				}) {
+					VStack {
 						if mode == .view {
-							Button("удалить", systemImage: "trash") {
-								handleItemDelete(selectedItem)
-							}
-							.tint(.red)
-							Button("изменить", systemImage: "pencil") {
-								mode = .edit
-							}
+							content(selectedItem)
 						} else {
-							HStack {
-								Button("отменить") {
-									handleItemCancel()
+							if formFields.isEmpty {
+								Text("Нет доступных полей")
+							} else {
+								formVeiw
+							}
+						}
+					}
+					.onDisappear {
+						handleItemCancel()
+					}
+					.navigationTitle(itemTitle(selectedItem))
+					.toolbar {
+						if canEdit {
+							if mode == .view {
+								Button("удалить", systemImage: "trash") {
+									handleItemDelete(selectedItem)
 								}
-								Button("сохранить") {
-									handleItemSave(selectedItem)
+								.tint(.red)
+								Button("изменить", systemImage: "pencil") {
+									mode = .edit
+								}
+							} else {
+								HStack {
+									Button("отменить") {
+										handleItemCancel()
+									}
+									Button("сохранить") {
+										handleItemSave(selectedItem)
+									}
 								}
 							}
 						}
 					}
+				} else {
+					Text("Элемент не найден")
 				}
-			} else {
-				Text("Элемент не найден")
 			}
-		}
-		.confirmationDialog(
-			"Удалить?",
-			isPresented: $isConfirmDeleteDialogPresented
-		) {
-			Button("Подтвердить удаление", role: .destructive) {
-				handeItemDeleteConfirm()
+			.confirmationDialog(
+				"Удалить?",
+				isPresented: $isConfirmDeleteDialogPresented
+			) {
+				Button("Подтвердить удаление", role: .destructive) {
+					handeItemDeleteConfirm()
+				}
+				Button("Отмена", role: .cancel) {
+					handleItemDeleteCancel()
+				}
 			}
-			Button("Отмена", role: .cancel) {
-				handleItemDeleteCancel()
-			}
-		}
 	}
 }
 
@@ -232,11 +238,10 @@ private class TestModel: ObservableObject {
 
 	RegistryView(
 		data: $model.value,
-		canEdit: $model.canEdit,
 		formFields: $formFields,
+		canEdit: false,
 		updatable: true,
 		idKey: \.self,
-		title: "Реестр",
 		itemTitle: { $0.name },
 		onUpdateCancel: { print("Update cancel") },
 		onUpdateSave: { print("Update save \($0.name)") },
@@ -248,4 +253,5 @@ private class TestModel: ObservableObject {
 			Text("Detail for \(item.name)")
 		}
 	)
+	.navigationTitle("Title")
 }
