@@ -7,5 +7,6 @@ struct AirlinesApp: App {
         WindowGroup {
             ContentView()
         }
+		.modelContainer(for: Toast.self, inMemory: false)
     }
 }

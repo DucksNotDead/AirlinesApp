@@ -1,6 +1,12 @@
 import Foundation
 import Combine
 
+enum Hosts: String {
+	case local = "localhost"
+	case home = "192.168.0.100"
+}
+
+let HOST: Hosts = .home
 let PORT = 8000
 
 class ApiService {
@@ -10,7 +16,7 @@ class ApiService {
 	private init() {}
 
 	/// Базовый URL API
-	private let baseURL = URL(string: "http://192.168.0.100:\(PORT)")!
+	private let baseURL = URL(string: "http://\(HOST):\(PORT)")!
 
 	/// Выполнение запросов с заданным методом и параметрами
 	private func request<T: Decodable>(

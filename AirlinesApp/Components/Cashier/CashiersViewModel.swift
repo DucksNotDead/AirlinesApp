@@ -1,18 +1,17 @@
 import Combine
 import Foundation
-import SwiftData
 
-typealias Users = [User]
+typealias Cashiers = [Cashier]
 
 private struct paths {
-	static var base: String = "/users"
+	static let base = "/cashiers"
 	static func item(id: Int) -> String {
 		return "\(base)/\(id)"
 	}
 }
 
-class UsersViewModel: ObservableObject {
-	@Published var users: [User] = []
+class CashiersViewModel: ObservableObject {
+	@Published var cashiers: [Cashier] = []
 	@Published var isLoading: Bool = false
 	private var cancellables: Set<AnyCancellable> = []
 	private let toasts: ToastsDataSource
@@ -24,57 +23,60 @@ class UsersViewModel: ObservableObject {
 	}
 
 	func fetch() {
-		api.get(path: paths.base, responseType: Users.self).sink { completion in
+		isLoading = true
+		api.get(path: paths.base, responseType: Cashiers.self).sink {
+			completion in
+			self.isLoading = false
 			switch completion {
 			case .finished: break
 			case .failure:
-				self.toasts.error("Ошибка получения пользователей")
+				self.toasts.error("Ошибка получения кассиров")
 			}
-		} receiveValue: { users in
-			self.users = users
+		} receiveValue: { cashiers in
+			self.cashiers = cashiers
 		}
 		.store(in: &cancellables)
 	}
 
-	func create(_ dto: UserCreateUpdateDto) {
+	func create(_ dto: CashierCreateUpdateDto) {
 		isLoading = true
 		api.post(
 			path: paths.base,
 			body: dto.toJSONObject()!,
-			responseType: User.self
+			responseType: Cashier.self
 		).sink { completion in
 			self.isLoading = false
 			switch completion {
 			case .finished:
-				self.toasts.append("Пользователь создан")
+				self.toasts.append("Кассир создан")
 			case .failure:
-				self.toasts.error("Ошибка создания пользователя")
+				self.toasts.error("Ошибка создания кассира")
 			}
-		} receiveValue: { user in
-			self.users.append(user)
+		} receiveValue: { cashier in
+			self.cashiers.append(cashier)
 		}
 		.store(in: &cancellables)
 
 	}
 
-	func update(_ dto: UserCreateUpdateDto) {
+	func update(_ dto: CashierCreateUpdateDto) {
 		isLoading = true
 		let id = dto.id!
 		api.patch(
 			path: paths.item(id: id),
 			body: dto.toJSONObject()!,
-			responseType: User.self
+			responseType: Cashier.self
 		).sink { completion in
 			self.isLoading = false
 			switch completion {
 			case .finished:
-				self.toasts.append("Пользователь изменён")
+				self.toasts.append("Кассир изменён")
 			case .failure:
-				self.toasts.error("Ошибка изменения пользователя")
+				self.toasts.error("Ошибка изменения кассира")
 			}
-		} receiveValue: { user in
-			if let index = self.users.firstIndex(where: { $0.id == id }) {
-				self.users[index] = user
+		} receiveValue: { cashier in
+			if let index = self.cashiers.firstIndex(where: { $0.id == id }) {
+				self.cashiers[index] = cashier
 			}
 		}
 		.store(in: &cancellables)
@@ -87,12 +89,12 @@ class UsersViewModel: ObservableObject {
 				self.isLoading = false
 				switch completion {
 				case .finished:
-					self.toasts.append("Пользователь удалён")
+					self.toasts.append("Кассир удалён")
 				case .failure:
-					self.toasts.error("Ошибка удаления пользователя")
+					self.toasts.error("Ошибка удаления кассира")
 				}
 			} receiveValue: { deleted in
-				self.users = self.users.filter { $0.id != deleted.id }
+				self.cashiers = self.cashiers.filter { $0.id != deleted.id }
 			}
 			.store(in: &cancellables)
 	}

@@ -1,8 +1,19 @@
 import SwiftUI
 
 struct TicketsScreen: View {
+	@StateObject var ticketsModel = TicketsViewModel()
+	
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+		NavigationStack {
+			ScrollView {
+				VStack(spacing: 10) {
+					ForEach(ticketsModel.tickets, id: \.id) { ticket in
+						TicketItem(ticket)
+					}
+				}
+			}
+			.navigationTitle("билеты")
+		}
     }
 }
 

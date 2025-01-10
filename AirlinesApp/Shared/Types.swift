@@ -1,6 +1,14 @@
 import Foundation
 import SwiftUI
 
+struct DeleteResponse: Codable {
+	var id: Int
+}
+
+struct MessageResponse: Codable {
+	var message: String
+}
+
 struct ChooseOption: Codable, Hashable {
 	var label: String
 	var value: String
@@ -16,8 +24,8 @@ enum FormFieldValueType {
 
 struct FormField {
 	var label: String
-	var value: FormFieldValueType
 	var optional: Bool = false
+	var value: FormFieldValueType
 	var updatable: Bool = true
 }
 

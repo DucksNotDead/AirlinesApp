@@ -3,22 +3,13 @@ import Foundation
 
 class FormService<DataType>: ObservableObject
 where DataType: Codable {
-	@Published var data: DataType? = nil
+	@Published var data: DataType
 	var cancellables: Set<AnyCancellable> = []
 	let defaultData: DataType
 
-	required init(
-		_ defaultData: DataType,
-		_ clousure: @escaping (_ data: DataType) -> Void
-	) {
+	required init(_ defaultData: DataType) {
 		self.defaultData = defaultData
-		setDefault()
-
-		$data
-			.receive(on: DispatchQueue.main)
-			.sink { clousure($0!) }
-			.store(in: &cancellables)
-
+		self.data = defaultData
 	}
 
 	func setDefault() {

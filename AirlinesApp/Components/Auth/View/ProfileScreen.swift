@@ -27,7 +27,7 @@ struct ProfileScreen: View {
 									.foregroundStyle(.secondary)
 							}
 							Spacer(minLength: 24)
-							Button("выйти", systemImage: "logout") {
+							Button("выйти") {
 								authViewModel.logout()
 							}
 						}

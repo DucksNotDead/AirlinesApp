@@ -1,6 +1,11 @@
 import Foundation
 
-struct CashDesk {
+struct CashDesk: Codable, Hashable {
 	var id: Int
+	var address: String
+}
+
+struct CashDeskCreateUpdateDto: Codable {
+	var id: Int?
 	var address: String
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct Coupon {
+struct Coupon: Codable, Hashable {
 	var id: Int
 	var route: String
 	var rate: Int

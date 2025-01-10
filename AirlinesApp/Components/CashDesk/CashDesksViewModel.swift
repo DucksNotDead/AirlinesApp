@@ -1,18 +1,17 @@
 import Combine
 import Foundation
-import SwiftData
 
-typealias Users = [User]
+typealias CashDesks = [CashDesk]
 
 private struct paths {
-	static var base: String = "/users"
+	static let base = "/cash-desks"
 	static func item(id: Int) -> String {
 		return "\(base)/\(id)"
 	}
 }
 
-class UsersViewModel: ObservableObject {
-	@Published var users: [User] = []
+class CashDesksViewModel: ObservableObject {
+	@Published var cashDesks: [CashDesk] = []
 	@Published var isLoading: Bool = false
 	private var cancellables: Set<AnyCancellable> = []
 	private let toasts: ToastsDataSource
@@ -24,57 +23,60 @@ class UsersViewModel: ObservableObject {
 	}
 
 	func fetch() {
-		api.get(path: paths.base, responseType: Users.self).sink { completion in
+		isLoading = true
+		api.get(path: paths.base, responseType: CashDesks.self).sink {
+			completion in
+			self.isLoading = false
 			switch completion {
 			case .finished: break
 			case .failure:
-				self.toasts.error("Ошибка получения пользователей")
+				self.toasts.error("Ошибка получения касс")
 			}
-		} receiveValue: { users in
-			self.users = users
+		} receiveValue: { cashDesks in
+			self.cashDesks = cashDesks
 		}
 		.store(in: &cancellables)
 	}
 
-	func create(_ dto: UserCreateUpdateDto) {
+	func create(_ dto: CashDeskCreateUpdateDto) {
 		isLoading = true
 		api.post(
 			path: paths.base,
 			body: dto.toJSONObject()!,
-			responseType: User.self
+			responseType: CashDesk.self
 		).sink { completion in
 			self.isLoading = false
 			switch completion {
 			case .finished:
-				self.toasts.append("Пользователь создан")
+				self.toasts.append("Касса создана")
 			case .failure:
-				self.toasts.error("Ошибка создания пользователя")
+				self.toasts.error("Ошибка создания кассы")
 			}
-		} receiveValue: { user in
-			self.users.append(user)
+		} receiveValue: { cashDesk in
+			self.cashDesks.append(cashDesk)
 		}
 		.store(in: &cancellables)
 
 	}
 
-	func update(_ dto: UserCreateUpdateDto) {
+	func update(_ dto: CashDeskCreateUpdateDto) {
 		isLoading = true
 		let id = dto.id!
 		api.patch(
 			path: paths.item(id: id),
 			body: dto.toJSONObject()!,
-			responseType: User.self
+			responseType: CashDesk.self
 		).sink { completion in
 			self.isLoading = false
 			switch completion {
 			case .finished:
-				self.toasts.append("Пользователь изменён")
+				self.toasts.append("Касса изменена")
 			case .failure:
-				self.toasts.error("Ошибка изменения пользователя")
+				self.toasts.error("Ошибка изменения кассы")
 			}
-		} receiveValue: { user in
-			if let index = self.users.firstIndex(where: { $0.id == id }) {
-				self.users[index] = user
+		} receiveValue: { cashDesk in
+			if let index = self.cashDesks.firstIndex(where: { $0.id == id }) {
+				self.cashDesks[index] = cashDesk
 			}
 		}
 		.store(in: &cancellables)
@@ -87,12 +89,12 @@ class UsersViewModel: ObservableObject {
 				self.isLoading = false
 				switch completion {
 				case .finished:
-					self.toasts.append("Пользователь удалён")
+					self.toasts.append("Касса удалена")
 				case .failure:
-					self.toasts.error("Ошибка удаления пользователя")
+					self.toasts.error("Ошибка удаления кассы")
 				}
 			} receiveValue: { deleted in
-				self.users = self.users.filter { $0.id != deleted.id }
+				self.cashDesks = self.cashDesks.filter { $0.id != deleted.id }
 			}
 			.store(in: &cancellables)
 	}

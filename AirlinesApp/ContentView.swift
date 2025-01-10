@@ -1,26 +1,54 @@
 import SwiftUI
 
 struct ContentView: View {
-	@StateObject var authViewModel = AuthViewModel()
+	@StateObject var authModel = AuthViewModel()
+	
+	@ViewBuilder
+	func content() -> some View {
+		if authModel.isLoading {
+			ProgressView()
+		} else {
+			TabView {
+				if let user = authModel.currentUser,
+					user.role != .client
+				{
+					RegistriesScreen(userRole: user.role)
+						.tabItem {
+							Label(
+								"Разделы",
+								systemImage: "filemenu.and.selection"
+							)
+						}
 
-	var body: some View {
-		TabView {
-			if let user = authViewModel.currentUser, user.role != .client {
-				RegistriesScreen(userRole: user.role)
+					if user.role == .admin {
+						ReportsScreen()
+							.tabItem {
+								Label(
+									"Отчеты",
+									systemImage: "chart.line.text.clipboard"
+								)
+							}
+					}
+				}
+				TicketsScreen()
 					.tabItem {
-						Label("Разделы", systemImage: "chart.line.text.clipboard")
+						Label(
+							"Биллеты",
+							systemImage: "checkmark.seal.text.page")
+					}
+
+				ProfileScreen()
+					.environmentObject(authModel)
+					.tabItem {
+						Label("Аккаунт", systemImage: "person.crop.circle")
 					}
 			}
-			TicketsScreen()
-				.tabItem {
-					Label("Биллеты", systemImage: "checkmark.seal.text.page")
-				}
-			
-			ProfileScreen()
-				.environmentObject(authViewModel)
-				.tabItem {
-					Label("Аккаунт", systemImage: "person.crop.circle")
-				}
+		}
+	}
+
+	var body: some View {
+		ToastsProvider {
+			content()
 		}
 	}
 }

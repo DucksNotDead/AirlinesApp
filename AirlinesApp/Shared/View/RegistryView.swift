@@ -14,52 +14,68 @@ where
 		case create
 	}
 
-	@Binding var data: Data
-	@Binding var formFields: [FormField]
+	struct IdentifableItem: Identifiable, Hashable {
+		var id: ID
+		var value: Data.Element
+	}
+
+	let data: Data
+	let formFields: [FormField]
 	let canEdit: Bool
+	let isLoading: Bool
 	let updatable: Bool
 	let idKey: KeyPath<Data.Element, ID>
 	let itemTitle: (_: Data.Element) -> String
 	let onDelete: (_: Data.Element) -> Void
-	let onUpdateCancel: () -> Void
+	let onItemOpen: (_: Data.Element) -> Void
+	let onItemCancel: () -> Void
+	let onItemCreate: () -> Void
 	let onUpdateSave: (_: Data.Element) -> Void
 	let label: (_: Data.Element) -> Label
 	let content: (_: Data.Element) -> Detail
 
+	var identifiableData: [IdentifableItem] {
+		data.map { item in
+			IdentifableItem(id: item[keyPath: idKey], value: item)
+		}
+	}
+
 	@State var isDetailPageActive: Bool = false
 	@State var mode: Mode = .view
+	@State var isCreateDialogPresented: Bool = false
 	@State var isConfirmDeleteDialogPresented: Bool = false
 	@State var itemToDelete: Data.Element? = nil
 
 	init(
-		data: Binding<Data>,
-		formFields: Binding<[FormField]>,
+		data: Data,
+		isLoading: Bool,
+		formFields: [FormField],
 		canEdit: Bool,
 		updatable: Bool = true,
 		idKey: KeyPath<Data.Element, ID>,
 		itemTitle: @escaping (_: Data.Element) -> String,
-		onUpdateCancel: @escaping () -> Void,
+		onItemOpen: @escaping (_: Data.Element) -> Void,
+		onItemCancel: @escaping () -> Void,
+		onItemCreate: @escaping () -> Void,
 		onUpdateSave: @escaping (_: Data.Element) -> Void,
 		onDelete: @escaping (_: Data.Element) -> Void,
 		@ViewBuilder label: @escaping (_: Data.Element) -> Label,
 		@ViewBuilder detail: @escaping (_: Data.Element) -> Detail
 	) {
-		self._data = data
+		self.data = data
 		self.canEdit = canEdit
-		self._formFields = formFields
+		self.isLoading = isLoading
+		self.formFields = formFields
 		self.idKey = idKey
 		self.itemTitle = itemTitle
-		self.onUpdateCancel = onUpdateCancel
+		self.onItemOpen = onItemOpen
+		self.onItemCancel = onItemCancel
+		self.onItemCreate = onItemCreate
 		self.onUpdateSave = onUpdateSave
 		self.onDelete = onDelete
 		self.updatable = updatable
 		self.label = label
 		self.content = detail
-	}
-
-	struct IdentifableItem: Identifiable, Hashable {
-		var id: ID
-		var value: Data.Element
 	}
 
 	func handleItemDelete(_ item: Data.Element) {
@@ -79,8 +95,26 @@ where
 		handleItemDeleteCancel()
 	}
 
-	func handleItemCancel() {
-		onUpdateCancel()
+	func handleItemCreate() {
+		onItemCancel()
+		mode = .create
+		isCreateDialogPresented = true
+	}
+
+	func handleItemCreateCancel() {
+		onItemCancel()
+		mode = .view
+	}
+
+	func handleItemCreateConfirm() {
+		onItemCreate()
+		isCreateDialogPresented = false
+		onItemCancel()
+		mode = .view
+	}
+
+	func handleItemCancel(_ item: Data.Element) {
+		onItemOpen(item)
 		mode = .view
 	}
 
@@ -89,23 +123,24 @@ where
 		mode = .view
 	}
 
+	@ViewBuilder
 	var listView: some View {
-		List {
-			ForEach(
-				data.map { item in
-					IdentifableItem(id: item[keyPath: idKey], value: item)
-				}, id: \.id
-			) { item in
-				NavigationLink(value: item.id) {
-					label(item.value)
-						.swipeActions {
-							if canEdit {
-								Button("удалить", systemImage: "trash") {
-									handleItemDelete(item.value)
+		if identifiableData.isEmpty {
+			Text("Тут пусто")
+		} else {
+			List {
+				ForEach(identifiableData, id: \.id) { item in
+					NavigationLink(value: item.id.hashValue) {
+						label(item.value)
+							.swipeActions {
+								if canEdit {
+									Button("удалить", systemImage: "trash") {
+										handleItemDelete(item.value)
+									}
+									.tint(.red)
 								}
-								.tint(.red)
 							}
-						}
+					}
 				}
 			}
 		}
@@ -132,6 +167,9 @@ where
 								.toggleStyle(.switch)
 						case .choose(let binding, let options):
 							Picker(field.label, selection: binding) {
+								if (field.optional) {
+									Text("пусто").tag("").foregroundStyle(.secondary)
+								}
 								ForEach(options, id: \.value) { option in
 									Text(option.label).tag(option.value)
 								}
@@ -152,69 +190,127 @@ where
 	}
 
 	var body: some View {
-		listView
-			.onChange(
-				of: isDetailPageActive,
-				{ oldValue, newValue in
-					print(oldValue, newValue)
-				}
-			)
-			.navigationDestination(for: ID.self) { id in
-				if let selectedItem = data.first(where: {
-					$0[keyPath: idKey] == id
-				}) {
-					VStack {
-						if mode == .view {
-							content(selectedItem)
+		VStack {
+			if isLoading {
+				ProgressView()
+			} else {
+				listView
+					.onChange(
+						of: isDetailPageActive,
+						{ oldValue, newValue in
+							print(oldValue, newValue)
+						}
+					)
+					.navigationDestination(for: Int.self) { id in
+						if let selectedItem = data.first(where: {
+							$0[keyPath: idKey].hashValue == id
+						}) {
+							VStack {
+								if mode == .view {
+									content(selectedItem)
+								} else {
+									if formFields.isEmpty {
+										Text("Нет доступных полей")
+									} else {
+										formVeiw
+									}
+								}
+							}
+							.onAppear {
+								onItemOpen(selectedItem)
+							}
+							.onDisappear {
+								handleItemCancel(selectedItem)
+							}
+							.navigationTitle(itemTitle(selectedItem))
+							.toolbar {
+								if canEdit {
+									if mode == .view {
+										Button("удалить", systemImage: "trash")
+										{
+											handleItemDelete(selectedItem)
+										}
+										.tint(.red)
+										if updatable {
+											Button(
+												"изменить",
+												systemImage: "square.and.pencil"
+											) {
+												mode = .edit
+											}
+										}
+									} else {
+										Button(
+											"отменить",
+											systemImage: "arrow.uturn.backward"
+										) {
+											handleItemCancel(selectedItem)
+										}
+
+										Button(
+											"сохранить",
+											systemImage: "checkmark.circle.fill"
+										) {
+											handleItemSave(selectedItem)
+										}
+									}
+								}
+							}
 						} else {
-							if formFields.isEmpty {
-								Text("Нет доступных полей")
-							} else {
+							Text("Элемент не найден")
+						}
+					}
+					.sheet(
+						isPresented: $isCreateDialogPresented,
+						content: {
+							VStack(spacing: 0) {
+								HStack {
+									Text("добавить")
+										.font(.headline)
+									Spacer()
+									Button("сохранить") {
+										handleItemCreateConfirm()
+									}
+									.padding(.vertical, 6)
+									.padding(.horizontal, 12)
+									.background(Color.blue)
+									.foregroundStyle(.white)
+									.clipShape(.rect(cornerRadius: 12))
+								}.padding()
+
 								formVeiw
 							}
 						}
-					}
-					.onDisappear {
-						handleItemCancel()
-					}
-					.navigationTitle(itemTitle(selectedItem))
-					.toolbar {
-						if canEdit {
-							if mode == .view {
-								Button("удалить", systemImage: "trash") {
-									handleItemDelete(selectedItem)
-								}
-								.tint(.red)
-								Button("изменить", systemImage: "pencil") {
-									mode = .edit
-								}
-							} else {
-								HStack {
-									Button("отменить") {
-										handleItemCancel()
-									}
-									Button("сохранить") {
-										handleItemSave(selectedItem)
-									}
-								}
+					)
+					.onChange(
+						of: isCreateDialogPresented,
+						{ oldValue, newValue in
+							if !newValue {
+								handleItemCreateCancel()
 							}
 						}
+					)
+					.confirmationDialog(
+						"Удалить?",
+						isPresented: $isConfirmDeleteDialogPresented
+					) {
+						Button("Подтвердить удаление", role: .destructive) {
+							handeItemDeleteConfirm()
+						}
+						Button("Отмена", role: .cancel) {
+							handleItemDeleteCancel()
+						}
 					}
-				} else {
-					Text("Элемент не найден")
-				}
 			}
-			.confirmationDialog(
-				"Удалить?",
-				isPresented: $isConfirmDeleteDialogPresented
-			) {
-				Button("Подтвердить удаление", role: .destructive) {
-					handeItemDeleteConfirm()
+		}
+		.toolbar {
+			if canEdit {
+				Button("создать", systemImage: "plus") {
+					handleItemCreate()
 				}
-				Button("Отмена", role: .cancel) {
-					handleItemDeleteCancel()
-				}
+				.disabled(isLoading)
 			}
+		}
 	}
 }
 
@@ -236,22 +332,26 @@ private class TestModel: ObservableObject {
 	@Previewable @StateObject var model = TestModel()
 	@Previewable @State var formFields: [FormField] = []
 
-	RegistryView(
-		data: $model.value,
-		formFields: $formFields,
-		canEdit: false,
-		updatable: true,
-		idKey: \.self,
-		itemTitle: { $0.name },
-		onUpdateCancel: { print("Update cancel") },
-		onUpdateSave: { print("Update save \($0.name)") },
-		onDelete: { print("Delete \( $0.name)") },
-		label: { item in
-			Text("\(item.name)")
-		},
-		detail: { item in
-			Text("Detail for \(item.name)")
-		}
-	)
-	.navigationTitle("Title")
+	NavigationStack {
+		RegistryView(
+			data: model.value,
+			isLoading: false,
+			formFields: formFields,
+			canEdit: true,
+			idKey: \.key,
+			itemTitle: { $0.name },
+			onItemOpen: { item in },
+			onItemCancel: { print("Update cancel") },
+			onItemCreate: {},
+			onUpdateSave: { print("Update save \($0.name)") },
+			onDelete: { print("Delete \( $0.name)") },
+			label: { item in
+				Text("\(item.name)")
+			},
+			detail: { item in
+				Text("Detail for \(item.name)")
+			}
+		)
+		.navigationTitle("реестр")
+	}
 }
