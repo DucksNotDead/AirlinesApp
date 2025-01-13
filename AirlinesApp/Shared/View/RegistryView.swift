@@ -1,19 +1,12 @@
 import SwiftUI
 
-struct RegistryView<Data, ID, Label, Detail>: View
+struct RegistryView<Data, ID, Label>: View
 where
 	Data: RandomAccessCollection,
 	Data.Element: Hashable,
 	ID: Hashable,
-	Label: View,
-	Detail: View
+	Label: View
 {
-	enum Mode {
-		case view
-		case edit
-		case create
-	}
-
 	struct IdentifableItem: Identifiable, Hashable {
 		var id: ID
 		var value: Data.Element
@@ -25,14 +18,13 @@ where
 	let isLoading: Bool
 	let updatable: Bool
 	let idKey: KeyPath<Data.Element, ID>
-	let itemTitle: (_: Data.Element) -> String
 	let onDelete: (_: Data.Element) -> Void
 	let onItemOpen: (_: Data.Element) -> Void
 	let onItemCancel: () -> Void
 	let onItemCreate: () -> Void
 	let onUpdateSave: (_: Data.Element) -> Void
+	let onRefresh: () -> Void
 	let label: (_: Data.Element) -> Label
-	let content: (_: Data.Element) -> Detail
 
 	var identifiableData: [IdentifableItem] {
 		data.map { item in
@@ -40,11 +32,11 @@ where
 		}
 	}
 
-	@State var isDetailPageActive: Bool = false
-	@State var mode: Mode = .view
-	@State var isCreateDialogPresented: Bool = false
+	@State var isFormDialogPresented: Bool = false
 	@State var isConfirmDeleteDialogPresented: Bool = false
 	@State var itemToDelete: Data.Element? = nil
+	@State var itemToUpdate: Data.Element? = nil
+	@FocusState var focusedField: String?
 
 	init(
 		data: Data,
@@ -53,39 +45,32 @@ where
 		canEdit: Bool,
 		updatable: Bool = true,
 		idKey: KeyPath<Data.Element, ID>,
-		itemTitle: @escaping (_: Data.Element) -> String,
 		onItemOpen: @escaping (_: Data.Element) -> Void,
 		onItemCancel: @escaping () -> Void,
 		onItemCreate: @escaping () -> Void,
 		onUpdateSave: @escaping (_: Data.Element) -> Void,
 		onDelete: @escaping (_: Data.Element) -> Void,
-		@ViewBuilder label: @escaping (_: Data.Element) -> Label,
-		@ViewBuilder detail: @escaping (_: Data.Element) -> Detail
+		onRefresh: @escaping () -> Void,
+		@ViewBuilder label: @escaping (_: Data.Element) -> Label
 	) {
 		self.data = data
 		self.canEdit = canEdit
 		self.isLoading = isLoading
 		self.formFields = formFields
 		self.idKey = idKey
-		self.itemTitle = itemTitle
 		self.onItemOpen = onItemOpen
 		self.onItemCancel = onItemCancel
 		self.onItemCreate = onItemCreate
 		self.onUpdateSave = onUpdateSave
 		self.onDelete = onDelete
+		self.onRefresh = onRefresh
 		self.updatable = updatable
 		self.label = label
-		self.content = detail
 	}
 
 	func handleItemDelete(_ item: Data.Element) {
 		itemToDelete = item
 		isConfirmDeleteDialogPresented = true
-	}
-
-	func handleItemDeleteCancel() {
-		isConfirmDeleteDialogPresented = false
-		itemToDelete = nil
 	}
 
 	func handeItemDeleteConfirm() {
@@ -95,32 +80,80 @@ where
 		handleItemDeleteCancel()
 	}
 
-	func handleItemCreate() {
+	func handleItemDeleteCancel() {
+		itemToDelete = nil
+	}
+
+	func setItemToUpdate(_ item: Data.Element? = nil) {
+		itemToUpdate = item
+	}
+
+	func handleFormOpen(_ item: Data.Element? = nil) {
+		isFormDialogPresented = true
+
+		if let item {
+			setItemToUpdate(item)
+			onItemOpen(item)
+		} else {
+			setItemToUpdate()
+			onItemCancel()
+		}
+	}
+
+	func handleFormCancel() {
+		isFormDialogPresented = false
+		setItemToUpdate()
 		onItemCancel()
-		mode = .create
-		isCreateDialogPresented = true
 	}
 
-	func handleItemCreateCancel() {
-		onItemCancel()
-		mode = .view
+	func handleFormSave() {
+		if let item = itemToUpdate {
+			onUpdateSave(item)
+		} else {
+			onItemCreate()
+		}
+
+		handleFormCancel()
 	}
 
-	func handleItemCreateConfirm() {
-		onItemCreate()
-		isCreateDialogPresented = false
-		onItemCancel()
-		mode = .view
-	}
-
-	func handleItemCancel(_ item: Data.Element) {
-		onItemOpen(item)
-		mode = .view
-	}
-
-	func handleItemSave(_ item: Data.Element) {
-		onUpdateSave(item)
-		mode = .view
+	@ViewBuilder
+	var formVeiw: some View {
+		Form {
+			ForEach(
+				Array(formFields.enumerated()),
+				id: \.0
+			) { index, field in
+				if itemToUpdate == nil || (updatable && field.updatable) {
+					Section(field.label) {
+						switch field.value {
+						case .string(let binding):
+							TextField("Введите текст", text: binding)								
+						case .price(let binding):
+							TextField(
+								"Введите число", value: binding,
+								format: .currency(code: "RUB")
+							)
+							.keyboardType(.numberPad)
+						case .boolean(let binding):
+							Toggle(field.label, isOn: binding)
+								.toggleStyle(.switch)
+						case .choose(let binding, let options):
+							Picker(field.label, selection: binding) {
+								if field.optional {
+									Text("Отсутствует").tag("").foregroundStyle(
+										.secondary)
+								}
+								ForEach(options, id: \.value) { option in
+									Text(option.label).tag(option.value)
+								}
+							}
+							.pickerStyle(.wheel)
+							.frame(maxHeight: 140)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	@ViewBuilder
@@ -130,58 +163,41 @@ where
 		} else {
 			List {
 				ForEach(identifiableData, id: \.id) { item in
-					NavigationLink(value: item.id.hashValue) {
+					VStack(alignment: .leading) {
 						label(item.value)
-							.swipeActions {
-								if canEdit {
-									Button("удалить", systemImage: "trash") {
-										handleItemDelete(item.value)
-									}
-									.tint(.red)
-								}
-							}
 					}
-				}
-			}
-		}
-	}
-
-	var formVeiw: some View {
-		Form {
-			ForEach(
-				Array(formFields.enumerated()),
-				id: \.0
-			) { index, field in
-				if mode != .edit || (updatable && field.updatable) {
-					Section(field.label) {
-						switch field.value {
-						case .string(let binding):
-							TextField("Введите текст", text: binding)
-						case .integer(let binding):
-							TextField(
-								"Введите число", value: binding, format: .number
-							)
-							.keyboardType(.numberPad)
-						case .boolean(let binding):
-							Toggle(field.label, isOn: binding)
-								.toggleStyle(.switch)
-						case .choose(let binding, let options):
-							Picker(field.label, selection: binding) {
-								if (field.optional) {
-									Text("пусто").tag("").foregroundStyle(.secondary)
-								}
-								ForEach(options, id: \.value) { option in
-									Text(option.label).tag(option.value)
-								}
+					.contextMenu {
+						if canEdit {
+							Button(
+								"Изменить", systemImage: "square.and.pencil"
+							) {
+								handleFormOpen(item.value)
 							}
-							.pickerStyle(.wheel)
-							.frame(maxHeight: 140)
-						case .date(let binding):
-							DatePicker(
-								"Выберете дату",
-								selection: binding,
-								displayedComponents: [.date]
-							)
+							Button(
+								"Удалить", systemImage: "trash",
+								role: .destructive
+							) {
+								handleItemDelete(item.value)
+							}
+
+						}
+					}
+					.swipeActions {
+						if canEdit {
+							Button("Удалить", systemImage: "trash") {
+								handleItemDelete(item.value)
+							}
+							.tint(.red)
+						}
+					}
+					.swipeActions(edge: .leading) {
+						if canEdit {
+							Button(
+								"Изменить", systemImage: "square.and.pencil"
+							) {
+								handleFormOpen(item.value)
+							}
+							.tint(.blue)
 						}
 					}
 				}
@@ -191,122 +207,46 @@ where
 
 	var body: some View {
 		VStack {
-			if isLoading {
-				ProgressView()
-			} else {
-				listView
-					.onChange(
-						of: isDetailPageActive,
-						{ oldValue, newValue in
-							print(oldValue, newValue)
-						}
-					)
-					.navigationDestination(for: Int.self) { id in
-						if let selectedItem = data.first(where: {
-							$0[keyPath: idKey].hashValue == id
-						}) {
-							VStack {
-								if mode == .view {
-									content(selectedItem)
-								} else {
-									if formFields.isEmpty {
-										Text("Нет доступных полей")
-									} else {
-										formVeiw
-									}
+			listView
+				.refreshable { onRefresh() }
+				.sheet(
+					isPresented: $isFormDialogPresented,
+					content: {
+						VStack(spacing: 0) {
+							HStack {
+								Text(
+									itemToUpdate != nil
+										? "изменить" : "добавить"
+								)
+								.font(.headline)
+								Spacer()
+								PrimaryButton("сохранить") {
+									handleFormSave()
 								}
-							}
-							.onAppear {
-								onItemOpen(selectedItem)
-							}
-							.onDisappear {
-								handleItemCancel(selectedItem)
-							}
-							.navigationTitle(itemTitle(selectedItem))
-							.toolbar {
-								if canEdit {
-									if mode == .view {
-										Button("удалить", systemImage: "trash")
-										{
-											handleItemDelete(selectedItem)
-										}
-										.tint(.red)
-										if updatable {
-											Button(
-												"изменить",
-												systemImage: "square.and.pencil"
-											) {
-												mode = .edit
-											}
-										}
-									} else {
-										Button(
-											"отменить",
-											systemImage: "arrow.uturn.backward"
-										) {
-											handleItemCancel(selectedItem)
-										}
+							}.padding()
 
-										Button(
-											"сохранить",
-											systemImage: "checkmark.circle.fill"
-										) {
-											handleItemSave(selectedItem)
-										}
-									}
-								}
-							}
-						} else {
-							Text("Элемент не найден")
+							formVeiw
 						}
 					}
-					.sheet(
-						isPresented: $isCreateDialogPresented,
-						content: {
-							VStack(spacing: 0) {
-								HStack {
-									Text("добавить")
-										.font(.headline)
-									Spacer()
-									Button("сохранить") {
-										handleItemCreateConfirm()
-									}
-									.padding(.vertical, 6)
-									.padding(.horizontal, 12)
-									.background(Color.blue)
-									.foregroundStyle(.white)
-									.clipShape(.rect(cornerRadius: 12))
-								}.padding()
-
-								formVeiw
-							}
-						}
-					)
-					.onChange(
-						of: isCreateDialogPresented,
-						{ oldValue, newValue in
-							if !newValue {
-								handleItemCreateCancel()
-							}
-						}
-					)
-					.confirmationDialog(
-						"Удалить?",
-						isPresented: $isConfirmDeleteDialogPresented
-					) {
-						Button("Подтвердить удаление", role: .destructive) {
-							handeItemDeleteConfirm()
-						}
-						Button("Отмена", role: .cancel) {
-							handleItemDeleteCancel()
+				)
+				.onChange(
+					of: isFormDialogPresented,
+					{ oldValue, newValue in
+						if !newValue {
+							handleFormCancel()
 						}
 					}
-			}
+				)
+				.modifier(
+					ConfirmDialogModifier(
+						$isConfirmDeleteDialogPresented,
+						onCancel: handleItemDeleteCancel,
+						onConfirm: handeItemDeleteConfirm))
 		}
 		.toolbar {
 			if canEdit {
 				Button("создать", systemImage: "plus") {
-					handleItemCreate()
+					handleFormOpen()
 				}
 				.disabled(isLoading)
 			}
@@ -339,17 +279,14 @@ private class TestModel: ObservableObject {
 			formFields: formFields,
 			canEdit: true,
 			idKey: \.key,
-			itemTitle: { $0.name },
-			onItemOpen: { item in },
+			onItemOpen: { print($0) },
 			onItemCancel: { print("Update cancel") },
 			onItemCreate: {},
 			onUpdateSave: { print("Update save \($0.name)") },
 			onDelete: { print("Delete \( $0.name)") },
+			onRefresh: {},
 			label: { item in
 				Text("\(item.name)")
-			},
-			detail: { item in
-				Text("Detail for \(item.name)")
 			}
 		)
 		.navigationTitle("реестр")

@@ -22,11 +22,11 @@ struct CompaniesRegistry: View {
 			formFields: formFields,
 			canEdit: true,
 			idKey: \.code,
-			itemTitle: { "\($0.code)" },
 			onItemOpen: { company in
 				formService.setData(
 					.init(
-						code: company.code, name: company.name,
+						code: company.code,
+						name: company.name,
 						address: company.address))
 			},
 			onItemCancel: {
@@ -42,22 +42,22 @@ struct CompaniesRegistry: View {
 			onUpdateSave: { company in
 				companiesModel.update(
 					.init(
+						code: company.code,
 						name: formService.data.name,
 						address: formService.data.address))
 			},
 			onDelete: { company in companiesModel.delete(company.code) },
-			label: { company in
+			onRefresh: { companiesModel.fetch() }
+		) { company in
+			VStack {
 				HStack {
 					Text(company.code)
 						.foregroundStyle(.orange)
 					Text(company.name)
 				}
-			},
-			detail: { company in
-				Text("Название компании: \(company.name)")
-				Text("Адрес компании: \(company.address)")
 			}
-		)
+			KeyValueView("Адрес", company.address)
+		}
 	}
 }
 

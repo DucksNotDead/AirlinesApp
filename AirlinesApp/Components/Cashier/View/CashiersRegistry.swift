@@ -13,9 +13,11 @@ struct CashiersRegistry: View {
 				label: "Пользователь",
 				value: .choose(
 					$formService.data.user_id,
-					usersModel.users.map({ user in
-						.init(label: user.login, value: "\(user.id)")
-					}))),
+					usersModel.users
+						.filter({ $0.role == .cashier })
+						.map({ user in
+							.init(label: user.login, value: "\(user.id)")
+						}))),
 		]
 	}
 
@@ -26,7 +28,6 @@ struct CashiersRegistry: View {
 			formFields: formFields,
 			canEdit: true,
 			idKey: \.id,
-			itemTitle: { "\($0.fio)" },
 			onItemOpen: { cashier in
 				formService.setData(
 					.init(
@@ -50,22 +51,15 @@ struct CashiersRegistry: View {
 					))
 			},
 			onDelete: { cashiersModel.delete($0.id) },
-			label: { cashier in Text("\(cashier.fio)") },
-			detail: { cashier in
-				if let user = usersModel.users.first(where: {
-					$0.id == cashier.user_id
-				}
-				) {
-					VStack {
-						Text("Пользователь")
-							.font(.title3)
-						Text("Логин: \(user.login)")
-						Text("Роль: \(user.role.localized)")
-					}
-				} else {
-					EmptyView()
-				}
-			})
+			onRefresh: { cashiersModel.fetch() }
+		) { cashier in
+			Text(cashier.fio)
+			if let user = usersModel.users.first(where: {
+				$0.id == cashier.user_id
+			}) {
+				KeyValueView("Логин", user.login)
+			}
+		}
 	}
 }
 

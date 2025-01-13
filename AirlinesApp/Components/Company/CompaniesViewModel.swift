@@ -27,8 +27,10 @@ class CompaniesViewModel: ObservableObject {
 	}
 
 	func fetch() {
+		isLoading = true
 		api.get(path: paths.base, responseType: Companies.self).sink {
 			completion in
+			self.isLoading = false
 			switch completion {
 			case .finished: break
 			case .failure:

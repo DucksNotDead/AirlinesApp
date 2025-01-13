@@ -13,14 +13,18 @@ class ToastsDataSource {
 		self.modelContainer = try! ModelContainer(for: Toast.self)
 		self.modelContext = modelContainer.mainContext
 	}
-
-	private func add(_ toast: Toast) {
-		modelContext.insert(toast)
+	
+	private func save() {
 		do {
 			try modelContext.save()
 		} catch {
 			fatalError(error.localizedDescription)
 		}
+	}
+
+	private func add(_ toast: Toast) {
+		modelContext.insert(toast)
+		save()
 	}
 
 	func append(_ message: String) {
@@ -33,5 +37,6 @@ class ToastsDataSource {
 
 	func remove(_ item: Toast) {
 		modelContext.delete(item)
+		save()
 	}
 }

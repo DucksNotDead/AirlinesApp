@@ -39,7 +39,6 @@ struct UsersRegistry: View {
 				formFields: formFields,
 				canEdit: true,
 				idKey: \User.id,
-				itemTitle: { "\($0.login)" },
 				onItemOpen: { user in
 					formService.setData(
 						.init(
@@ -54,13 +53,11 @@ struct UsersRegistry: View {
 				onItemCreate: { usersModel.create(formService.data) },
 				onUpdateSave: { user in usersModel.update(formService.data) },
 				onDelete: { user in usersModel.delete(user.id) },
-				label: { user in
-					Text("\(user.login)")
-				},
-				detail: { user in
-					Text("Роль: \(user.role.localized)")
-				}
-			)
+				onRefresh: { usersModel.fetch() }
+			) { user in
+				Text("\(user.login)")
+				KeyValueView("Роль", user.role.localized)
+			}
 		} else {
 			ProgressView()
 		}

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RegistriesScreen: View {
 	let userRole: UserRole
-	@State var selection: Set<String> = []
 
 	struct Registry: Identifiable {
 		var id: String
@@ -21,7 +20,7 @@ struct RegistriesScreen: View {
 		.init(
 			id: "Клиенты",
 			icon: "person.crop.square.filled.and.at.rectangle.fill",
-			view: AnyView(Text("")), roles: [.admin]
+			view: AnyView(ClientsRegistry()), roles: [.admin]
 		),
 		.init(
 			id: "Кассы", icon: "rublesign.bank.building.fill",
@@ -29,11 +28,6 @@ struct RegistriesScreen: View {
 		.init(
 			id: "Кассиры", icon: "person.2.wave.2.fill",
 			view: AnyView(CashiersRegistry()), roles: [.admin]),
-		.init(
-			id: "Купоны",
-			icon: "ticket.fill",
-			view: AnyView(Text("")), roles: [.admin]
-		),
 	]
 
 	var body: some View {

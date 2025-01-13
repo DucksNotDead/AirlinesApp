@@ -19,7 +19,6 @@ struct CashDesksRegistry: View {
 			formFields: formFields,
 			canEdit: true,
 			idKey: \.id,
-			itemTitle: { $0.address },
 			onItemOpen: { cashDesk in
 				formService.setData(
 					.init(address: cashDesk.address))
@@ -32,9 +31,10 @@ struct CashDesksRegistry: View {
 						id: cashDesk.id, address: formService.data.address))
 			},
 			onDelete: { cashDesksModel.delete($0.id) },
-			label: { cashDesk in Text(cashDesk.address) },
-			detail: { _ in EmptyView() }
-		)
+			onRefresh: { cashDesksModel.fetch() }
+		) { cashDesk in
+			Text(cashDesk.address)
+		}
 	}
 }
 

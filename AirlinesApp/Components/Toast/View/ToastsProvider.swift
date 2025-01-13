@@ -9,9 +9,13 @@ struct ToastsProvider<Content>: View where Content: View {
 
 	init(_ content: @escaping () -> Content) {
 		self.content = content
-		
-		for toast in toasts {
-			modelContext.delete(toast)
+	}
+	
+	private func save() {
+		do {
+			try modelContext.save()
+		} catch {
+			fatalError(error.localizedDescription)
 		}
 	}
 
@@ -31,13 +35,20 @@ struct ToastsProvider<Content>: View where Content: View {
 			}
 			.padding(.top, 14)
 			.onChange(of: toasts) { oldValue, newValue in
-				DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+				DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
 					if let item = newValue.last {
 						self.modelContext.delete(item)
+						save()
 					}
 				}
 			}
 			.animation(.easeIn(duration: 0.15), value: toasts)
+		}
+		.onDisappear() {
+			for toast in toasts {
+				modelContext.delete(toast)
+			}
+			save()
 		}
 	}
 }

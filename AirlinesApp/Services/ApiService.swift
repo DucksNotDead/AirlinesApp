@@ -4,9 +4,10 @@ import Combine
 enum Hosts: String {
 	case local = "localhost"
 	case home = "192.168.0.100"
+	case plisk = "192.168.0.247"
 }
 
-let HOST: Hosts = .home
+let HOST: Hosts = .plisk
 let PORT = 8000
 
 class ApiService {
@@ -16,7 +17,7 @@ class ApiService {
 	private init() {}
 
 	/// Базовый URL API
-	private let baseURL = URL(string: "http://\(HOST):\(PORT)")!
+	private let baseURL = URL(string: "http://\(HOST.rawValue):\(PORT)")!
 
 	/// Выполнение запросов с заданным методом и параметрами
 	private func request<T: Decodable>(

@@ -16,10 +16,9 @@ struct ChooseOption: Codable, Hashable {
 
 enum FormFieldValueType {
 	case string(Binding<String>)
-	case integer(Binding<Int>)
+	case price(Binding<Int>)
 	case boolean(Binding<Bool>)
 	case choose(Binding<String>, [ChooseOption])
-	case date(Binding<Date>)
 }
 
 struct FormField {

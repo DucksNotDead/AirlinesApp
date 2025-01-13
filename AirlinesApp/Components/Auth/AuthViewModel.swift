@@ -39,7 +39,6 @@ class AuthViewModel: ObservableObject {
 					self.toasts.append("Авторизация успешна")
 					break
 				case .failure:
-					self.toasts.error("Ошибка авторизации")
 					break
 				}
 			},
