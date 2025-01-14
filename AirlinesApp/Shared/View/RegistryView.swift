@@ -12,18 +12,19 @@ where
 		var value: Data.Element
 	}
 
+	typealias ItemClosure = (_: Data.Element) -> Void
+
 	let data: Data
 	let formFields: [FormField]
 	let canEdit: Bool
 	let isLoading: Bool
-	let updatable: Bool
 	let idKey: KeyPath<Data.Element, ID>
-	let onDelete: (_: Data.Element) -> Void
-	let onItemOpen: (_: Data.Element) -> Void
-	let onItemCancel: () -> Void
-	let onItemCreate: () -> Void
-	let onUpdateSave: (_: Data.Element) -> Void
-	let onRefresh: () -> Void
+	let onDelete: ItemClosure
+	let onItemOpen: ItemClosure
+	let onItemCancel: VoidClosure
+	let onItemCreate: VoidClosure
+	let onUpdateSave: ItemClosure
+	let onRefresh: VoidClosure
 	let label: (_: Data.Element) -> Label
 
 	var identifiableData: [IdentifableItem] {
@@ -36,7 +37,6 @@ where
 	@State var isConfirmDeleteDialogPresented: Bool = false
 	@State var itemToDelete: Data.Element? = nil
 	@State var itemToUpdate: Data.Element? = nil
-	@FocusState var focusedField: String?
 
 	init(
 		data: Data,
@@ -45,12 +45,12 @@ where
 		canEdit: Bool,
 		updatable: Bool = true,
 		idKey: KeyPath<Data.Element, ID>,
-		onItemOpen: @escaping (_: Data.Element) -> Void,
-		onItemCancel: @escaping () -> Void,
-		onItemCreate: @escaping () -> Void,
-		onUpdateSave: @escaping (_: Data.Element) -> Void,
-		onDelete: @escaping (_: Data.Element) -> Void,
-		onRefresh: @escaping () -> Void,
+		onItemOpen: @escaping ItemClosure,
+		onItemCancel: @escaping VoidClosure,
+		onItemCreate: @escaping VoidClosure,
+		onUpdateSave: @escaping ItemClosure,
+		onDelete: @escaping ItemClosure,
+		onRefresh: @escaping VoidClosure,
 		@ViewBuilder label: @escaping (_: Data.Element) -> Label
 	) {
 		self.data = data
@@ -64,7 +64,6 @@ where
 		self.onUpdateSave = onUpdateSave
 		self.onDelete = onDelete
 		self.onRefresh = onRefresh
-		self.updatable = updatable
 		self.label = label
 	}
 
@@ -117,26 +116,32 @@ where
 	}
 
 	@ViewBuilder
-	var formVeiw: some View {
+	var formView: some View {
 		Form {
 			ForEach(
-				Array(formFields.enumerated()),
+				Array(
+					formFields.sorted(by: { a, b in
+						!a.updatable && b.updatable
+					}).enumerated()),
 				id: \.0
 			) { index, field in
-				if itemToUpdate == nil || (updatable && field.updatable) {
+				if itemToUpdate == nil || field.updatable {
 					Section(field.label) {
 						switch field.value {
 						case .string(let binding):
-							TextField("Введите текст", text: binding)								
+							TextField("Введите текст", text: binding)
+
 						case .price(let binding):
 							TextField(
 								"Введите число", value: binding,
 								format: .currency(code: "RUB")
 							)
 							.keyboardType(.numberPad)
+
 						case .boolean(let binding):
 							Toggle(field.label, isOn: binding)
 								.toggleStyle(.switch)
+
 						case .choose(let binding, let options):
 							Picker(field.label, selection: binding) {
 								if field.optional {
@@ -209,33 +214,14 @@ where
 		VStack {
 			listView
 				.refreshable { onRefresh() }
-				.sheet(
-					isPresented: $isFormDialogPresented,
-					content: {
-						VStack(spacing: 0) {
-							HStack {
-								Text(
-									itemToUpdate != nil
-										? "изменить" : "добавить"
-								)
-								.font(.headline)
-								Spacer()
-								PrimaryButton("сохранить") {
-									handleFormSave()
-								}
-							}.padding()
-
-							formVeiw
-						}
-					}
-				)
-				.onChange(
-					of: isFormDialogPresented,
-					{ oldValue, newValue in
-						if !newValue {
-							handleFormCancel()
-						}
-					}
+				.modifier(
+					FormSheetModifier(
+						$isFormDialogPresented,
+						isEdit: itemToUpdate != nil,
+						onCancel: handleFormCancel,
+						onSave: handleFormSave,
+						formView: { formView }
+					)
 				)
 				.modifier(
 					ConfirmDialogModifier(
@@ -251,6 +237,7 @@ where
 				.disabled(isLoading)
 			}
 		}
+		.animation(.easeInOut, value: data.count)
 	}
 }
 
@@ -270,7 +257,12 @@ private class TestModel: ObservableObject {
 
 #Preview {
 	@Previewable @StateObject var model = TestModel()
-	@Previewable @State var formFields: [FormField] = []
+	@Previewable @State var stringField: String = ""
+	var formFields: [FormField] {
+		return [
+			.init(label: "Text", value: .string($stringField))
+		]
+	}
 
 	NavigationStack {
 		RegistryView(

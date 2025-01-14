@@ -16,42 +16,108 @@ struct TicketsScreen: View {
 		case to
 	}
 
+	enum BuyTicketField {
+		case email
+		case passport
+		case fio
+	}
+
+	enum FormModeSetter {
+		case create
+		case update(Ticket)
+		case buy(Ticket)
+	}
+
+	enum FormMode {
+		case create
+		case update
+		case buy
+	}
+
 	let userRole: UserRole
 	let isLoggedIn: Bool
 
 	let editRoles: [UserRole] = [.admin, .employee]
 
 	@StateObject var ticketsModel: TicketsViewModel = .init()
-	@State var isUpdateFormPresented: Bool = false
-	@State var isBuyFormPresented: Bool = false
-	@State var ticketToUpdate: Ticket?
-	@State var ticketToBuy: Ticket?
+	@StateObject var formService = FormService(
+		TicketCreateUpdateDto(company_code: "", type_id: 1, coupons: []))
+	@StateObject var buyTicketFormSevice = FormService(
+		TicketBuyCreditsDto(email: "", passport: "", fio: ""))
+	@State var openedTicketId: Int? = nil
+	@State var isFormPresented: Bool = false
+	@State var formMode: FormMode = .create
+	@State var ticketIdToBuy: Int?
 	@State var selectedStatus = "none"
 	@State var fromQuery = ""
 	@State var toQuery = ""
 	@FocusState var focusedQueryField: QueryField?
+	@FocusState var focusedBuyTicketField: BuyTicketField?
 
 	var canEdit: Bool { editRoles.contains(userRole) }
+
+	var items: [Ticket] {
+		return ticketsModel.tickets
+			.filter { ticket in
+				guard
+					let firstCoupon = ticket.coupons.first,
+					let lastCoupon = ticket.coupons.last
+				else { return false }
+
+				let fromQuery = fromQuery.lowercased().trimmingCharacters(
+					in: .whitespaces)
+				let toQuery = toQuery.lowercased().trimmingCharacters(
+					in: .whitespaces)
+
+				return
+					(fromQuery.isEmpty
+					|| firstCoupon.from.lowercased().contains(fromQuery))
+					&& (toQuery.isEmpty
+						|| lastCoupon.to.lowercased().contains(toQuery))
+			}
+	}
 
 	func refreshAll() {
 		selectedStatus = "none"
 
 		ticketsModel.getStatuses()
+		ticketsModel.getTypes()
 		ticketsModel.fetch(statusCode: isLoggedIn ? "for_sale" : nil)
 	}
 
-	var filteredTickets: [Ticket] {
-		return ticketsModel.tickets.filter { ticket in
-			guard
-				let firstCoupon = ticket.coupons.first,
-				let lastCoupon = ticket.coupons.last
-			else { return false }
+	func presentForm(_ mode: FormModeSetter) {
+		isFormPresented = true
 
-			return
-				firstCoupon.from.lowercased().contains(
-					fromQuery.lowercased().trimmingCharacters(in: .whitespaces))
-				&& lastCoupon.to.lowercased().contains(
-					toQuery.lowercased().trimmingCharacters(in: .whitespaces))
+		switch mode {
+		case .create:
+			break
+		case .update(let ticket):
+			formMode = .update
+			formService.setData(
+				.init(
+					id: ticket.id, company_code: ticket.company.code,
+					type_id: ticket.type.id, coupons: ticket.coupons))
+		case .buy(let ticket):
+			formMode = .buy
+			ticketIdToBuy = ticket.id
+		}
+	}
+
+	func onFormClose() {
+		formService.setDefault()
+		buyTicketFormSevice.setDefault()
+		formMode = .create
+		ticketIdToBuy = nil
+	}
+
+	func handleFormSubmit() {
+		switch formMode {
+		case .create:
+			ticketsModel.create(formService.data)
+		case .update:
+			ticketsModel.update(formService.data)
+		case .buy:
+			ticketsModel.buy(ticketIdToBuy!, credits: buyTicketFormSevice.data)
 		}
 	}
 
@@ -78,19 +144,24 @@ struct TicketsScreen: View {
 						}
 				}
 				.padding(.horizontal)
-				VStack {
-					if filteredTickets.isEmpty {
+				.padding(.bottom)
+				VStack(spacing: 12) {
+					if items.isEmpty {
 						Spacer()
 						Text("Тут пусто")
 					} else {
-						ForEach(filteredTickets, id: \.id) { ticket in
+						ForEach(items, id: \.id) { ticket in
 							TicketItem(
 								ticket,
+								isOpen: openedTicketId == ticket.id,
 								userRole: userRole,
-								onUpdate: { isUpdateFormPresented = true },
-								onBuy: { isBuyFormPresented = true }
+								onOpen: { openedTicketId = ticket.id },
+								onClose: { openedTicketId = nil },
+								onUpdate: { presentForm(.update(ticket)) },
+								onBuy: { presentForm(.buy(ticket)) }
 							)
 							.environmentObject(ticketsModel)
+							.transition(.scale)
 						}
 					}
 				}
@@ -114,11 +185,78 @@ struct TicketsScreen: View {
 
 				if canEdit {
 					Button("Добавить", systemImage: "plus") {
-						isUpdateFormPresented = true
+						presentForm(.create)
 					}
 				}
 			}
 			.refreshable { refreshAll() }
+			.onChange(of: selectedStatus, { oldValue, newValue in
+				ticketsModel.fetch(statusCode: newValue == "none" ? nil : newValue)
+			})
+			.modifier(
+				FormSheetModifier(
+					$isFormPresented,
+					title: formMode == .buy ? "купить билет" : nil,
+					isEdit: formMode == .update,
+					savable: formMode == .buy
+						|| formService.data.coupons.count > 0,
+					onCancel: onFormClose,
+					onSave: handleFormSubmit,
+					formView: {
+						switch formMode {
+						case .buy:
+							Form {
+								Section("ФИО") {
+									TextField(
+										"Введите текст",
+										text: $buyTicketFormSevice.data.fio
+									)
+									.focused(
+										$focusedBuyTicketField, equals: .fio
+									)
+									.submitLabel(.next)
+									.onSubmit {
+										focusedBuyTicketField = .passport
+									}
+								}
+								Section("Паспорт") {
+									TextField(
+										"Введите текст",
+										text: $buyTicketFormSevice.data.passport
+									)
+									.focused(
+										$focusedBuyTicketField,
+										equals: .passport
+									)
+									.submitLabel(.next)
+									.onSubmit {
+										focusedBuyTicketField = .email
+									}
+								}
+								Section("Почта") {
+									TextField(
+										"Введите текст",
+										text: $buyTicketFormSevice.data.email
+									)
+									.focused(
+										$focusedBuyTicketField, equals: .email
+									)
+									.submitLabel(.done)
+									.onSubmit {
+										focusedBuyTicketField = nil
+									}
+								}
+							}
+						default:
+							TicketForm(
+								isOpen: isFormPresented,
+								types: ticketsModel.types,
+								formData: $formService.data)
+						}
+					})
+			)
+			.animation(.easeInOut(duration: 0.2), value: items.count)
+			.animation(.easeInOut(duration: 0.2), value: openedTicketId)
 		}
 	}
 }

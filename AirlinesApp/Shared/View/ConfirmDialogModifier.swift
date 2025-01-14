@@ -3,14 +3,14 @@ import SwiftUI
 struct ConfirmDialogModifier: ViewModifier {
 	@Binding var isPresented: Bool
 	let confirmText: String
-	let onCancel: () -> Void
-	let onConfirm: () -> Void
+	let onCancel: VoidClosure
+	let onConfirm: VoidClosure
 
 	init(
 		_ isPresented: Binding<Bool>,
 		confirmText: String = "Подтвердить",
-		onCancel: @escaping () -> Void = {},
-		onConfirm: @escaping () -> Void
+		onCancel: @escaping VoidClosure = {},
+		onConfirm: @escaping VoidClosure
 	) {
 		self._isPresented = isPresented
 		self.confirmText = confirmText

@@ -86,11 +86,12 @@
 				};
 			};
 			buildConfigurationList = 16FEAE452D2ECBA5002564FF /* Build configuration list for PBXProject "AirlinesApp" */;
-			developmentRegion = en;
+			developmentRegion = ru;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 16FEAE412D2ECBA5002564FF;
 			minimizedProjectReferenceProxies = 1;

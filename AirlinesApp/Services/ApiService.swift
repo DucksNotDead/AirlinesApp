@@ -7,7 +7,7 @@ enum Hosts: String {
 	case plisk = "192.168.0.247"
 }
 
-let HOST: Hosts = .plisk
+let HOST: Hosts = .home
 let PORT = 8000
 
 class ApiService {
@@ -48,15 +48,14 @@ class ApiService {
 		if let body = body, (method == "POST" || method == "PATCH") {
 			let requestBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 			request.httpBody = requestBody
+			print("Запрос: \(request.httpMethod!) \(request.url!.absoluteString)")
 			print(String(data: requestBody!, encoding: .utf8)!)
 		}
 
 		// Выполнение запроса через URLSession
 		return URLSession.shared.dataTaskPublisher(for: request)
 			.tryMap { result in
-				guard let httpResponse = result.response as? HTTPURLResponse else {
-					throw URLError(.badServerResponse)
-				}
+				print("Ответ: ")
 				print(String(data: result.data, encoding: .utf8)!)
 				
 				return result.data

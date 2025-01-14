@@ -32,3 +32,5 @@ protocol FormConfiguration {
 	var createFields: [FormField] { get }
 	var updateFields: [FormField] { get }
 }
+
+typealias VoidClosure = () -> Void

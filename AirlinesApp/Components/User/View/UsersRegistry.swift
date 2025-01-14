@@ -35,7 +35,7 @@ struct UsersRegistry: View {
 		if !usersModel.users.isEmpty {
 			RegistryView(
 				data: usersModel.users,
-				isLoading: false,
+				isLoading: usersModel.isLoading,
 				formFields: formFields,
 				canEdit: true,
 				idKey: \User.id,

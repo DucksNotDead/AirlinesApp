@@ -10,17 +10,19 @@ struct TicketItem: View {
 	}
 
 	let ticket: Ticket
+	let isOpen: Bool
 	let userRole: UserRole
-	let onUpdate: () -> Void
-	let onBuy: () -> Void
-	
+	let onOpen: VoidClosure
+	let onClose: VoidClosure
+	let onUpdate: VoidClosure
+	let onBuy: VoidClosure
+
 	let routeSeparator: String = " – "
 	let diffRoutesSeparator: String = ", "
 	let editRoles: [UserRole] = [.admin, .employee]
 	let confirmRoles: [UserRole] = [.cashier]
 
 	@EnvironmentObject var ticketsModel: TicketsViewModel
-	@State var isOpen: Bool = false
 	@State var isConfirmDeletePresented: Bool = false
 	@State var isConfirmConfirmPresented: Bool = false
 	@State var isConfirmDenyPresented: Bool = false
@@ -31,12 +33,18 @@ struct TicketItem: View {
 
 	init(
 		_ ticket: Ticket,
+		isOpen: Bool,
 		userRole: UserRole,
-		onUpdate: @escaping () -> Void,
-		onBuy: @escaping () -> Void
+		onOpen: @escaping VoidClosure,
+		onClose: @escaping VoidClosure,
+		onUpdate: @escaping VoidClosure,
+		onBuy: @escaping VoidClosure
 	) {
+		self.isOpen = isOpen
 		self.ticket = ticket
 		self.userRole = userRole
+		self.onOpen = onOpen
+		self.onClose = onClose
 		self.onUpdate = onUpdate
 		self.onBuy = onBuy
 	}
@@ -128,6 +136,7 @@ struct TicketItem: View {
 		.padding(.horizontal)
 		.padding(.vertical, 8)
 		.background(Color(UIColor.secondarySystemBackground))
+		.clipShape(.rect(cornerRadius: 14))
 	}
 
 	var body: some View {
@@ -156,12 +165,12 @@ struct TicketItem: View {
 							HStack {
 								Spacer()
 								Button(sumRoute, systemImage: "chevron.down") {
-									isOpen = true
+									onOpen()
 								}
 								.modifier(SubHeadlineModifier())
 							}
 						} else {
-							Button(action: { isOpen = false }) {
+							Button(action: { onClose() }) {
 								VStack {
 									HStack {
 										Spacer()
@@ -213,14 +222,14 @@ struct TicketItem: View {
 				$isConfirmDeletePresented,
 				confirmText: "Подтвердить удаление",
 				onConfirm: {
-					
+					ticketsModel.delete(ticket.id)
 				})
 		)
 		.modifier(
 			ConfirmDialogModifier(
 				$isConfirmConfirmPresented,
 				onConfirm: {
-
+					ticketsModel.confirm(ticket.id)
 				})
 		)
 		.modifier(
@@ -228,13 +237,15 @@ struct TicketItem: View {
 				$isConfirmDenyPresented,
 				confirmText: "Отклонить",
 				onConfirm: {
-
+					ticketsModel.deny(ticket.id)
 				})
 		)
 	}
 }
 
 #Preview {
+	@Previewable @State var isOpen: Bool = false
+
 	TicketItem(
 		.init(
 			id: 1, buy_date: nil,
@@ -252,7 +263,10 @@ struct TicketItem: View {
 			], cashier: .init(id: 1, fio: "Иванов Иван Васильевич", user_id: 2),
 			cash_desk: .init(id: 1, address: "ул. Хлебная, дом 5"),
 			client: .init()),
+		isOpen: isOpen,
 		userRole: .admin,
+		onOpen: { isOpen = true },
+		onClose: { isOpen = false },
 		onUpdate: {},
 		onBuy: {}
 	)

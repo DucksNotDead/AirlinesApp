@@ -3,11 +3,11 @@ import SwiftUI
 struct PrimaryButton: View {
 	let label: String
 	let disabled: Bool
-	let action: () -> Void
+	let action: VoidClosure
 	@State var isTapped: Bool = false
 
 	@MainActor
-	init(_ label: String, disabled: Bool = false, action: @escaping () -> Void)
+	init(_ label: String, disabled: Bool = false, action: @escaping VoidClosure)
 	{
 		self.label = label
 		self.disabled = disabled

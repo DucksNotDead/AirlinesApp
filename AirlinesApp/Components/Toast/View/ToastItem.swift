@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ToastItem: View {
 	@Environment(\.modelContext) var modelContext
-	
+
 	let toast: Toast
 	var typeTheme: (String, Color) {
 		switch toast.type {
@@ -43,8 +43,7 @@ struct ToastItem: View {
 				.onEnded { value in
 					if value.translation.height < -20 {
 						modelContext.delete(toast)
-					}
-					else {
+					} else {
 						withAnimation {
 							offset = .zero
 						}
@@ -55,8 +54,6 @@ struct ToastItem: View {
 }
 
 #Preview {
-	var goodToast: Toast = .init("Hello World!")
-	var badToast: Toast = .init("Hello World!", type: .error)
-	ToastItem(goodToast)
-	ToastItem(badToast)
+	ToastItem(.init("Goood!"))
+	ToastItem(.init("Baaad!", type: .error))
 }
