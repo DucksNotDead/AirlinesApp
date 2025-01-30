@@ -7,10 +7,12 @@ struct FormSheetModifier<FormView: View>: ViewModifier {
 	let formView: () -> FormView
 	let onSave: VoidClosure
 	let onCancel: VoidClosure
+	let buttonLabel: String
 
 	init(
 		_ isPresented: Binding<Bool>,
 		title: String? = nil,
+		buttonLabel: String? = nil,
 		isEdit: Bool = false,
 		savable: Bool = true,
 		onCancel: @escaping VoidClosure,
@@ -19,6 +21,7 @@ struct FormSheetModifier<FormView: View>: ViewModifier {
 	) {
 		self._isPresented = isPresented
 		self.title = title ?? (isEdit ? "изменить" : "добавить")
+		self.buttonLabel = buttonLabel ?? "отправить"
 		self.savable = savable
 		self.formView = formView
 		self.onCancel = onCancel
@@ -35,7 +38,7 @@ struct FormSheetModifier<FormView: View>: ViewModifier {
 							Text(title)
 								.font(.headline)
 							Spacer()
-							PrimaryButton("отправить", disabled: !savable) {
+							PrimaryButton(buttonLabel, disabled: !savable) {
 								isPresented = false
 								onSave()
 							}
@@ -44,6 +47,8 @@ struct FormSheetModifier<FormView: View>: ViewModifier {
 						.background(Color(UIColor.secondarySystemBackground))
 
 						formView()
+							
+						Spacer(minLength: 0)
 					}
 				}
 			)

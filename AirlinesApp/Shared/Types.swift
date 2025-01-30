@@ -9,6 +9,10 @@ struct MessageResponse: Codable {
 	var message: String
 }
 
+struct FileResponse: Codable {
+	var file: Data
+}
+
 struct ChooseOption: Codable, Hashable {
 	var label: String
 	var value: String
@@ -33,4 +37,4 @@ protocol FormConfiguration {
 	var updateFields: [FormField] { get }
 }
 
-typealias VoidClosure = () -> Void
+typealias VoidClosure = () -> Void 
