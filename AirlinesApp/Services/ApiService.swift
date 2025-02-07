@@ -1,14 +1,13 @@
 import Foundation
 import Combine
 
+//для тестов api и устройство должны быть в одной сети в одной сети
 enum Hosts: String {
-	case local = "localhost"
-	case home = "192.168.0.100"
-	case plisk = "192.168.1.10"
-	case plisk2 = "192.168.0.247"
+	case local = "localhost" //эмулятор
+	case home = "192.168.0.101"
 }
 
-let HOST: Hosts = .home
+let HOST: Hosts = .local
 let PORT = 8000
 
 class ApiService {

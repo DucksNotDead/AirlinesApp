@@ -1,5 +1,11 @@
 import Foundation
 
+struct TicketsByCompanyAndMonthDto: Codable, Hashable {
+	var company_code: String
+	var month: Int
+	var year: Int
+}
+
 struct TicketsByCompanyAndMonthResponse: Codable, Hashable {
 	struct Ticket: Codable, Hashable {
 		var id: Int

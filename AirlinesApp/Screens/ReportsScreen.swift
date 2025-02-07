@@ -20,6 +20,8 @@ struct ReportsScreen: View {
 	@StateObject var tbcamForm = FormService(
 		TicketsByCompanyAndMonthDto(
 			company_code: "", month: 1, year: dateService.currentYear))
+	@StateObject var coecbdForm = FormService(
+		ClientsOfEachCompanyByDateDto(date: dateService.dateString(Date.now)))
 
 	var tbcamDisabled: Bool {
 		return tbcamForm.data.company_code == ""
@@ -37,12 +39,28 @@ struct ReportsScreen: View {
 					disabled: tbcamDisabled,
 					body: AnyView(
 						TicketsByCompanyAndMonthForm(formData: $tbcamForm.data)),
-					onCancel: tbcamForm.setDefault))
+					onCancel: tbcamForm.setDefault)),
+			.init(
+				id: .totalAmountOfEachCompany,
+				loadFn: {
+					reportsModel.loadTotalAmountOfEachCompany()
+				}),
+			.init(
+				id: .clientsOfEachCompanyByDate,
+				loadFn: {
+					reportsModel.loadClientsOfEachCompanyByDate(
+						dto: coecbdForm.data)
+				},
+				form: .init(
+					body: AnyView(
+						ClientsOfEachCompanyByDateForm(
+							formData: $coecbdForm.data)),
+					onCancel: coecbdForm.setDefault)),
 		]
 	}
 
 	var reportName: String { reportsModel.openedReport?.name ?? "" }
-	
+
 	var defaultFilename: String { "file" }
 
 	var body: some View {
@@ -112,10 +130,10 @@ struct ReportsScreen: View {
 				defaultFilename: defaultFilename
 			) { result in
 				switch result {
-					case .success:
-						break
-					case .failure(let error):
-						modelContext.insert(Toast("Ошибка экспорта", type: .error))
+				case .success:
+					break
+				case .failure:
+					modelContext.insert(Toast("Ошибка экспорта", type: .error))
 				}
 			}
 		}

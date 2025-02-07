@@ -34,14 +34,14 @@ class ReportsViewModel: ObservableObject {
 
 	private func load<T, C>(
 		type: ReportType,
-		dto: Codable,
+		dto: Codable? = nil,
 		responseType: T.Type,
 		onLoad getNameAndPreview: @escaping (_ response: T) -> NameAndPreview<C>
 	) where T: Codable, C: View {
 		isLoading = true
 		api.post(
 			path: type.url,
-			body: dto.toJSONObject()!,
+			body: (dto != nil ? dto!.toJSONObject() : ["": ""])!,
 			responseType: T.self
 		).sink { completion in
 			switch completion {
@@ -60,7 +60,7 @@ class ReportsViewModel: ObservableObject {
 		}
 		.store(in: &cancellables)
 	}
-	
+
 	func save() {
 		guard
 			let report = openedReport,
@@ -69,11 +69,9 @@ class ReportsViewModel: ObservableObject {
 			error(.save)
 			return
 		}
-		
-		
+
 		let _ = pdfService.save(data, as: "filename")
-	
-		
+
 		toasts.append("Отчёт сохранён в 'Документы'")
 	}
 
@@ -81,18 +79,52 @@ class ReportsViewModel: ObservableObject {
 		self.load(
 			type: .ticketsByCompanyAndMonth,
 			dto: dto,
-			responseType: TicketsByCompanyAndMonthResponse.self,
-			onLoad: { response in
-				let monthYear = dateService.monthYearString(month: dto.month, year: dto.year)
-				let name = "Билеты, проданные за \(monthYear), \(response.company_name)"
-				return .init(
+			responseType: TicketsByCompanyAndMonthResponse.self
+		) { response in
+			let monthYear = dateService.monthYearString(
+				month: dto.month, year: dto.year)
+			let name =
+				"Билеты, проданные за \(monthYear), \(response.company_name)"
+			return .init(
+				name: name,
+				preview: TicketsByCompanyAndMonthReport(
 					name: name,
-					preview: TicketsByCompanyAndMonthReport(
-						name: name,
-						data: response.tickets
-					)
+					data: response.tickets
 				)
-			}
-		)
+			)
+		}
+	}
+
+	func loadClientsOfEachCompanyByDate(dto: ClientsOfEachCompanyByDateDto) {
+		self.load(
+			type: .clientsOfEachCompanyByDate,
+			dto: dto,
+			responseType: ClientsOfEachCompanyByDateResponse.self
+		) { response in
+			let name = "Список клиентов авиакомпаний на \(dto.date)"
+			return .init(
+				name: name,
+				preview: ClientsOfEachCompanyByDateReport(
+					name: name,
+					data: response.companies
+				)
+			)
+		}
+	}
+
+	func loadTotalAmountOfEachCompany() {
+		self.load(
+			type: .totalAmountOfEachCompany,
+			responseType: TotalAmountOfEachCompanyResponse.self
+		) { response in
+			let name = "Общая сумма продаж авиакомпаний"
+			return .init(
+				name: name,
+				preview: TotalAmountOfEachCompanyReport(
+					name: name,
+					data: response.companies
+				)
+			)
+		}
 	}
 }

@@ -29,7 +29,7 @@ struct SheetModifier<C: View>: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content
-			.sheet(isPresented: $isPresented) {
+			.sheet(isPresented: $isPresented, onDismiss: onDismiss) {
 				VStack(spacing: 0) {
 					HStack {
 						Text(title)

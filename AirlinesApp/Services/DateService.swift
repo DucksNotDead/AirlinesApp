@@ -32,6 +32,12 @@ class DateService {
 	func monthYearString(month: Int, year: Int) -> String {
 		return String(format: "%02d.%04d", month, year)
 	}
+	
+	func dateString(_ date: Date) -> String {
+		let formatter = DateFormatter()
+		formatter.dateFormat = "dd.MM.yyyy"
+		return formatter.string(from: date)
+	}
 }
 
 let dateService = DateService()
