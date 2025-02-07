@@ -39,7 +39,7 @@ struct LoadReportItem: View {
 				Image(systemName: "chevron.right.circle")
 					.font(.title)
 					.foregroundStyle(.blue)
-					.rotationEffect(.degrees(isOpen ? 90 : 0))
+					.rotationEffect(.degrees(isOpen ? -90 : 0))
 			}
 			.contentShape(Rectangle())
 			.onTapGesture {

@@ -45,6 +45,10 @@ struct TicketBuyCreditsDto: Codable {
 	var fio: String
 }
 
+struct TicketBuyConfirmDto: Codable {
+	var cash_desk_id: Int
+}
+
 struct TicketBuyResponse: Codable {
 	var isAccountCreated: Bool
 	var client: TicketClient

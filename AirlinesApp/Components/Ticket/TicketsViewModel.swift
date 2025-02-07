@@ -150,14 +150,12 @@ class TicketsViewModel: ObservableObject {
 			switch completion {
 			case .finished:
 				self.toasts.append("Заявка на покупку билета отправлена")
-			case .failure:
+			case .failure(let err):
+				print(err.localizedDescription)
 				self.toasts.error("Ошибка покупки билета")
 			}
 		} receiveValue: { ticketBuyResponse in
-			if let index = self.tickets.firstIndex(where: { $0.id == id }) {
-				self.tickets[index].status = self.statuses[1]
-				self.tickets[index].client = ticketBuyResponse.client
-			}
+			self.fetch()
 		}
 		.store(in: &cancellables)
 	}
@@ -171,9 +169,9 @@ class TicketsViewModel: ObservableObject {
 			self.isLoading = false
 			switch completion {
 			case .finished:
-				self.toasts.append("Заявка на покупку билета отправлена")
+				self.toasts.append("Покупка отменена")
 			case .failure:
-				self.toasts.error("Ошибка покупки билета")
+				self.toasts.error("Ошибка отмены покупки")
 
 			}
 		} receiveValue: { message in
@@ -182,18 +180,19 @@ class TicketsViewModel: ObservableObject {
 		.store(in: &cancellables)
 	}
 
-	func confirm(_ id: Int) {
+	func confirm(_ id: Int, dto: TicketBuyConfirmDto) {
 		isLoading = true
 		api.post(
 			path: paths.item(id: id, prefix: .confirm),
+			body: dto.toJSONObject()!,
 			responseType: MessageResponse.self
 		).sink { completion in
 			self.isLoading = false
 			switch completion {
 			case .finished:
-				self.toasts.append("Заявка на покупку билета отправлена")
+				self.toasts.append("Покупка подтверждена")
 			case .failure:
-				self.toasts.error("Ошибка покупки билета")
+				self.toasts.error("Ошибка подтверждения покупки")
 			}
 		} receiveValue: { message in
 			self.fetch()

@@ -26,12 +26,14 @@ struct TicketsScreen: View {
 		case create
 		case update(Ticket)
 		case buy(Ticket)
+		case buyConfirm(Ticket)
 	}
 
 	enum FormMode {
 		case create
 		case update
 		case buy
+		case buyConfirm
 	}
 
 	let userRole: UserRole
@@ -40,14 +42,18 @@ struct TicketsScreen: View {
 	let editRoles: [UserRole] = [.admin, .employee]
 
 	@StateObject var ticketsModel: TicketsViewModel = .init()
+	@StateObject var cashDesksModel: CashDesksViewModel = .init()
 	@StateObject var formService = FormService(
 		TicketCreateUpdateDto(company_code: "", type_id: 1, coupons: []))
 	@StateObject var buyTicketFormSevice = FormService(
 		TicketBuyCreditsDto(email: "", passport: "", fio: ""))
+	@StateObject var buyConfirmTicketFormService = FormService(
+		TicketBuyConfirmDto(cash_desk_id: 0))
 	@State var openedTicketId: Int? = nil
 	@State var isFormPresented: Bool = false
 	@State var formMode: FormMode = .create
 	@State var ticketIdToBuy: Int?
+	@State var ticketIdToConfirm: Int?
 	@State var selectedStatus = "none"
 	@State var fromQuery = ""
 	@State var toQuery = ""
@@ -76,13 +82,26 @@ struct TicketsScreen: View {
 						|| lastCoupon.to.lowercased().contains(toQuery))
 			}
 	}
+	
+	var formIsReady: Bool {
+		switch formMode {
+			case .create:
+				fallthrough
+			case .update:
+				return formService.data.coupons.count > 0
+			case .buy:
+				return true
+			case .buyConfirm:
+				return buyConfirmTicketFormService.data.cash_desk_id != 0
+		}
+	}
 
 	func refreshAll() {
 		selectedStatus = "none"
 
 		ticketsModel.getStatuses()
 		ticketsModel.getTypes()
-		ticketsModel.fetch(statusCode: isLoggedIn ? "for_sale" : nil)
+		ticketsModel.fetch()
 	}
 
 	func presentForm(_ mode: FormModeSetter) {
@@ -100,6 +119,9 @@ struct TicketsScreen: View {
 		case .buy(let ticket):
 			formMode = .buy
 			ticketIdToBuy = ticket.id
+		case .buyConfirm(let ticket):
+			formMode = .buyConfirm
+			ticketIdToConfirm = ticket.id
 		}
 	}
 
@@ -118,6 +140,8 @@ struct TicketsScreen: View {
 			ticketsModel.update(formService.data)
 		case .buy:
 			ticketsModel.buy(ticketIdToBuy!, credits: buyTicketFormSevice.data)
+			case .buyConfirm:
+				ticketsModel.confirm(ticketIdToConfirm!, dto: buyConfirmTicketFormService.data)
 		}
 	}
 
@@ -158,7 +182,8 @@ struct TicketsScreen: View {
 								onOpen: { openedTicketId = ticket.id },
 								onClose: { openedTicketId = nil },
 								onUpdate: { presentForm(.update(ticket)) },
-								onBuy: { presentForm(.buy(ticket)) }
+								onBuy: { presentForm(.buy(ticket)) },
+								onConfirm: { presentForm(.buyConfirm(ticket)) }
 							)
 							.environmentObject(ticketsModel)
 							.transition(.scale)
@@ -190,16 +215,19 @@ struct TicketsScreen: View {
 				}
 			}
 			.refreshable { refreshAll() }
-			.onChange(of: selectedStatus, { oldValue, newValue in
-				ticketsModel.fetch(statusCode: newValue == "none" ? nil : newValue)
-			})
+			.onChange(
+				of: selectedStatus,
+				{ oldValue, newValue in
+					ticketsModel.fetch(
+						statusCode: newValue == "none" ? nil : newValue)
+				}
+			)
 			.modifier(
 				FormSheetModifier(
 					$isFormPresented,
 					title: formMode == .buy ? "купить билет" : nil,
 					isEdit: formMode == .update,
-					savable: formMode == .buy
-						|| formService.data.coupons.count > 0,
+					savable: formIsReady,
 					onCancel: onFormClose,
 					onSave: handleFormSubmit,
 					formView: {
@@ -247,6 +275,17 @@ struct TicketsScreen: View {
 									}
 								}
 							}
+							case .buyConfirm:
+								Form {
+									Section("Касса") {
+										Picker("Выберите кассу", selection: $buyConfirmTicketFormService.data.cash_desk_id) {
+											Text("").tag(0)
+											ForEach(cashDesksModel.cashDesks, id: \.id) { cashdesk in
+												Text(cashdesk.address).tag(cashdesk.id)
+											}
+										}
+									}
+								}
 						default:
 							TicketForm(
 								isOpen: isFormPresented,

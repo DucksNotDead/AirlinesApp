@@ -30,28 +30,15 @@ struct FormSheetModifier<FormView: View>: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content
-			.sheet(
+			.modifier(SheetModifier(
 				isPresented: $isPresented,
-				content: {
-					VStack(spacing: 0) {
-						HStack {
-							Text(title)
-								.font(.headline)
-							Spacer()
-							PrimaryButton(buttonLabel, disabled: !savable) {
-								isPresented = false
-								onSave()
-							}
-						}
-						.padding()
-						.background(Color(UIColor.secondarySystemBackground))
-
-						formView()
-							
-						Spacer(minLength: 0)
-					}
-				}
-			)
+				title: title,
+				buttonLabel: buttonLabel,
+				buttonDisabled: !savable,
+				content: formView,
+				onDone: onSave,
+				onDismiss: onCancel
+			))
 			.onChange(
 				of: isPresented,
 				{ oldValue, newValue in

@@ -16,6 +16,7 @@ struct TicketItem: View {
 	let onClose: VoidClosure
 	let onUpdate: VoidClosure
 	let onBuy: VoidClosure
+	let onConfirm: VoidClosure
 
 	let routeSeparator: String = " – "
 	let diffRoutesSeparator: String = ", "
@@ -30,6 +31,7 @@ struct TicketItem: View {
 	var openable: Bool { ticket.coupons.count > 1 }
 	var canEdit: Bool { editRoles.contains(userRole) }
 	var canConfirm: Bool { confirmRoles.contains(userRole) }
+	var buyButtonDisabled: Bool { ticket.status.id != 1 || userRole != .client }
 
 	init(
 		_ ticket: Ticket,
@@ -38,7 +40,8 @@ struct TicketItem: View {
 		onOpen: @escaping VoidClosure,
 		onClose: @escaping VoidClosure,
 		onUpdate: @escaping VoidClosure,
-		onBuy: @escaping VoidClosure
+		onBuy: @escaping VoidClosure,
+		onConfirm: @escaping VoidClosure
 	) {
 		self.isOpen = isOpen
 		self.ticket = ticket
@@ -47,6 +50,7 @@ struct TicketItem: View {
 		self.onClose = onClose
 		self.onUpdate = onUpdate
 		self.onBuy = onBuy
+		self.onConfirm = onConfirm
 	}
 
 	var sumRoute: String {
@@ -102,13 +106,18 @@ struct TicketItem: View {
 	}
 
 	@ViewBuilder
+	var ticketStatus: some View {
+		Text(ticket.status.localized)
+			.modifier(SubHeadlineModifier())
+	}
+
+	@ViewBuilder
 	var editPanel: some View {
 		HStack(spacing: 16) {
-			Text(ticket.status.localized)
-				.modifier(SubHeadlineModifier())
-			Spacer()
 			switch ticket.status.id {
 			case 1:
+				ticketStatus
+				Spacer()
 				if canEdit {
 					Button("изменить") {
 						onUpdate()
@@ -119,16 +128,33 @@ struct TicketItem: View {
 				}
 			case 2:
 				if canConfirm {
-					Button("подтвердить") {
-						isConfirmConfirmPresented = true
+					HStack {
+						VStack(alignment: .leading) {
+							ticketStatus
+								.padding(.bottom, 8)
+							if let passport = ticket.client.passport, let fio = ticket.client.fio {
+								KeyValueView("ФИО", fio)
+								KeyValueView("Пасспорт", String(passport))
+							}
+						}
+						Spacer()
+						VStack(alignment: .trailing) {
+							Button("подтвердить") {
+								isConfirmConfirmPresented = true
+							}
+							Button("отклонить", role: .destructive) {
+								isConfirmDenyPresented = true
+							}
+						}
 					}
-					Button("отклонить", role: .destructive) {
-						isConfirmDenyPresented = true
-					}
+				} else {
+					ticketStatus
+					Spacer()
 				}
 			case 3:
-				Text("Куплено: \(String(describing: ticket.client.fio))")
-					.font(.subheadline)
+					Text("Куплено: \(ticket.client.fio ?? "")")
+						.modifier(SubHeadlineModifier())
+				Spacer()
 			default:
 				Text("Неизвестный статус")
 			}
@@ -203,7 +229,7 @@ struct TicketItem: View {
 				HStack {
 					priceItem(sumPrice)
 					Spacer()
-					PrimaryButton("купить", disabled: userRole != .client) {
+					PrimaryButton("купить", disabled: buyButtonDisabled) {
 						onBuy()
 					}
 				}
@@ -228,9 +254,7 @@ struct TicketItem: View {
 		.modifier(
 			ConfirmDialogModifier(
 				$isConfirmConfirmPresented,
-				onConfirm: {
-					ticketsModel.confirm(ticket.id)
-				})
+				onConfirm: onConfirm)
 		)
 		.modifier(
 			ConfirmDialogModifier(
@@ -268,6 +292,7 @@ struct TicketItem: View {
 		onOpen: { isOpen = true },
 		onClose: { isOpen = false },
 		onUpdate: {},
-		onBuy: {}
+		onBuy: {},
+		onConfirm: {}
 	)
 }

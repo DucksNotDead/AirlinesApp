@@ -4,7 +4,8 @@ import Combine
 enum Hosts: String {
 	case local = "localhost"
 	case home = "192.168.0.100"
-	case plisk = "192.168.0.247"
+	case plisk = "192.168.1.10"
+	case plisk2 = "192.168.0.247"
 }
 
 let HOST: Hosts = .home

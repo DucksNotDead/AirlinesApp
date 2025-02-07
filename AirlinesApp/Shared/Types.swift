@@ -10,7 +10,7 @@ struct MessageResponse: Codable {
 }
 
 struct FileResponse: Codable {
-	var file: Data
+	var file: String
 }
 
 struct ChooseOption: Codable, Hashable {
