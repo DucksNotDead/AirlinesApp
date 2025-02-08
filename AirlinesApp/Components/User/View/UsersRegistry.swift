@@ -4,7 +4,6 @@ import SwiftUI
 let roles = [
 	UserRole.client,
 	UserRole.admin,
-	UserRole.employee,
 	UserRole.cashier,
 ]
 

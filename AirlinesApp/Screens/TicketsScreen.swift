@@ -36,10 +36,8 @@ struct TicketsScreen: View {
 		case buyConfirm
 	}
 
-	let userRole: UserRole
-	let isLoggedIn: Bool
-
-	let editRoles: [UserRole] = [.admin, .employee]
+	let user: User
+	let editRoles: [UserRole] = [.admin]
 
 	@StateObject var ticketsModel: TicketsViewModel = .init()
 	@StateObject var cashDesksModel: CashDesksViewModel = .init()
@@ -60,7 +58,7 @@ struct TicketsScreen: View {
 	@FocusState var focusedQueryField: QueryField?
 	@FocusState var focusedBuyTicketField: BuyTicketField?
 
-	var canEdit: Bool { editRoles.contains(userRole) }
+	var canEdit: Bool { editRoles.contains(user.role) }
 
 	var items: [Ticket] {
 		return ticketsModel.tickets
@@ -178,7 +176,7 @@ struct TicketsScreen: View {
 							TicketItem(
 								ticket,
 								isOpen: openedTicketId == ticket.id,
-								userRole: userRole,
+								user: user,
 								onOpen: { openedTicketId = ticket.id },
 								onClose: { openedTicketId = nil },
 								onUpdate: { presentForm(.update(ticket)) },
@@ -194,19 +192,17 @@ struct TicketsScreen: View {
 			.navigationTitle("билеты")
 			.onAppear { refreshAll() }
 			.toolbar {
-				if isLoggedIn {
-					Picker(
-						selection: $selectedStatus,
-						label: Image(
-							systemName: "line.3.horizontal.decrease.circle")
-					) {
-						Text("Все").tag("none")
-						ForEach(ticketsModel.statuses, id: \.id) { status in
-							Text(status.localized).tag(status.code)
-						}
+				Picker(
+					selection: $selectedStatus,
+					label: Image(
+						systemName: "line.3.horizontal.decrease.circle")
+				) {
+					Text("Все").tag("none")
+					ForEach(ticketsModel.statuses, id: \.id) { status in
+						Text(status.localized).tag(status.code)
 					}
-					.pickerStyle(.menu)
 				}
+				.pickerStyle(.menu)
 
 				if canEdit {
 					Button("Добавить", systemImage: "plus") {

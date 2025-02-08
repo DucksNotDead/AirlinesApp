@@ -11,7 +11,7 @@ struct TicketItem: View {
 
 	let ticket: Ticket
 	let isOpen: Bool
-	let userRole: UserRole
+	let user: User
 	let onOpen: VoidClosure
 	let onClose: VoidClosure
 	let onUpdate: VoidClosure
@@ -20,7 +20,7 @@ struct TicketItem: View {
 
 	let routeSeparator: String = " – "
 	let diffRoutesSeparator: String = ", "
-	let editRoles: [UserRole] = [.admin, .employee]
+	let editRoles: [UserRole] = [.admin]
 	let confirmRoles: [UserRole] = [.cashier]
 
 	@EnvironmentObject var ticketsModel: TicketsViewModel
@@ -28,6 +28,7 @@ struct TicketItem: View {
 	@State var isConfirmConfirmPresented: Bool = false
 	@State var isConfirmDenyPresented: Bool = false
 
+	var userRole: UserRole { user.role }
 	var openable: Bool { ticket.coupons.count > 1 }
 	var canEdit: Bool { editRoles.contains(userRole) }
 	var canConfirm: Bool { confirmRoles.contains(userRole) }
@@ -36,7 +37,7 @@ struct TicketItem: View {
 	init(
 		_ ticket: Ticket,
 		isOpen: Bool,
-		userRole: UserRole,
+		user: User,
 		onOpen: @escaping VoidClosure,
 		onClose: @escaping VoidClosure,
 		onUpdate: @escaping VoidClosure,
@@ -45,7 +46,7 @@ struct TicketItem: View {
 	) {
 		self.isOpen = isOpen
 		self.ticket = ticket
-		self.userRole = userRole
+		self.user = user
 		self.onOpen = onOpen
 		self.onClose = onClose
 		self.onUpdate = onUpdate
@@ -91,6 +92,21 @@ struct TicketItem: View {
 		}
 	}
 
+	var buyButtonLabel: String {
+		switch ticket.status.id {
+		case 2:
+			return "Подтверждается"
+		case 3:
+			if ticket.client.user_id == user.id {
+				return "Куплен вами"
+			} else {
+				fallthrough
+			}
+		default:
+			return "Купить"
+		}
+	}
+
 	@ViewBuilder
 	func priceItem(_ price: Int) -> some View {
 		HStack(spacing: 4) {
@@ -132,7 +148,9 @@ struct TicketItem: View {
 						VStack(alignment: .leading) {
 							ticketStatus
 								.padding(.bottom, 8)
-							if let passport = ticket.client.passport, let fio = ticket.client.fio {
+							if let passport = ticket.client.passport,
+								let fio = ticket.client.fio
+							{
 								KeyValueView("ФИО", fio)
 								KeyValueView("Пасспорт", String(passport))
 							}
@@ -152,8 +170,8 @@ struct TicketItem: View {
 					Spacer()
 				}
 			case 3:
-					Text("Куплено: \(ticket.client.fio ?? "")")
-						.modifier(SubHeadlineModifier())
+				Text("Куплено: \(ticket.client.fio ?? "")")
+					.modifier(SubHeadlineModifier())
 				Spacer()
 			default:
 				Text("Неизвестный статус")
@@ -229,7 +247,7 @@ struct TicketItem: View {
 				HStack {
 					priceItem(sumPrice)
 					Spacer()
-					PrimaryButton("купить", disabled: buyButtonDisabled) {
+					PrimaryButton(buyButtonLabel, disabled: buyButtonDisabled) {
 						onBuy()
 					}
 				}
@@ -288,7 +306,7 @@ struct TicketItem: View {
 			cash_desk: .init(id: 1, address: "ул. Хлебная, дом 5"),
 			client: .init()),
 		isOpen: isOpen,
-		userRole: .admin,
+		user: testAdmin,
 		onOpen: { isOpen = true },
 		onClose: { isOpen = false },
 		onUpdate: {},

@@ -17,19 +17,17 @@ struct ContentView: View {
 			ProgressView()
 		} else {
 			TabView(selection: $selectedTab) {
-				if let user = authModel.currentUser,
-					user.role != .client
-				{
-					RegistriesScreen(userRole: user.role)
-						.tabItem {
-							Label(
-								"Разделы",
-								systemImage: "filemenu.and.selection"
-							)
-						}
-						.tag(Screens.registries)
-
+				if let user = authModel.currentUser {
 					if user.role == .admin {
+						RegistriesScreen(userRole: user.role)
+							.tabItem {
+								Label(
+									"Разделы",
+									systemImage: "filemenu.and.selection"
+								)
+							}
+							.tag(Screens.registries)
+
 						ReportsScreen()
 							.tabItem {
 								Label(
@@ -39,18 +37,15 @@ struct ContentView: View {
 							}
 							.tag(Screens.reports)
 					}
+					TicketsScreen(user: user)
+						.tabItem {
+							Label(
+								"Биллеты",
+								systemImage: "checkmark.seal.text.page"
+							)
+						}
+						.tag(Screens.tickets)
 				}
-				TicketsScreen(
-					userRole: authModel.currentUser?.role ?? .client,
-					isLoggedIn: authModel.currentUser != nil
-				)
-				.tabItem {
-					Label(
-						"Биллеты",
-						systemImage: "checkmark.seal.text.page"
-					)
-				}
-				.tag(Screens.tickets)
 
 				ProfileScreen()
 					.environmentObject(authModel)
